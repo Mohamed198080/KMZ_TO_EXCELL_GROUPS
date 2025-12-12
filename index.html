@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام معالجة البيانات الجغرافية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <!-- مكتبات لمعالجة الملفات الجغرافية -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson@4.5.0/dist/togeojson.umd.js"></script>
+    <style>
+        /* CSS يبقى كما هو مع إضافة بعض التعديلات الطفيفة */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            direction: rtl;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .upload-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .upload-area:hover {
+            border-color: #3498db;
+            background: #e8f4fc;
+            transform: translateY(-2px);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #2980b9;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-right: 4px solid #3498db;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .file-error {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .process-btn, .sample-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .process-btn {
+            background: #27ae60;
+            color: white;
+        }
+
+        .process-btn:hover {
+            background: #219653;
+            transform: translateY(-2px);
+        }
+
+        .sample-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .sample-btn:hover {
+            background: #e68900;
+            transform: translateY(-2px);
+        }
+
+        .clustering-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .clustering-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clustering-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .clustering-controls label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .clustering-controls input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .clustering-summary {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .results-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .results-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 992px) {
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #3498db, #5d9cec);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box:nth-child(2) {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .stat-box:nth-child(3) {
+            background: linear-gradient(135deg, #e74c3c, #e67e22);
+        }
+
+        .stat-box:nth-child(4) {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: right;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            text-align: right;
+        }
+
+        .results-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .group-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: white;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .download-section {
+            margin-top: 25px;
+        }
+
+        .download-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #c0392b;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .instructions {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .instructions h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .step h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            color: #666;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #27ae60;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .polygon-groups {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .polygon-groups h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .polygon-group-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-right: 4px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- شريط العنوان -->
+        <header class="header">
+            <h1><i class="fas fa-map-marked-alt"></i> نظام معالجة البيانات الجغرافية</h1>
+            <p>ربط نقاط الإحداثيات بالمضللات الجغرافية وتقسيمها إلى مجموعات</p>
+        </header>
+
+        <div class="main-content">
+            <!-- قسم رفع الملفات -->
+            <div class="upload-section">
+                <h2><i class="fas fa-cloud-upload-alt"></i> رفع الملفات</h2>
+                
+                <div class="upload-area" id="excel-upload-area" onclick="document.getElementById('excel-file').click()">
+                    <i class="fas fa-file-excel"></i>
+                    <h3>ملف Excel</h3>
+                    <p>يحتوي على أرقام العدادات والإحداثيات</p>
+                    <button class="upload-btn">اختر ملف Excel</button>
+                    <input type="file" id="excel-file" accept=".xlsx, .xls" hidden>
+                </div>
+                
+                <div class="upload-area" id="kmz-upload-area" onclick="document.getElementById('kmz-file').click()">
+                    <i class="fas fa-map"></i>
+                    <h3>ملف KMZ</h3>
+                    <p>يحتوي على المضللات الجغرافية</p>
+                    <button class="upload-btn">اختر ملف KMZ</button>
+                    <input type="file" id="kmz-file" accept=".kmz" hidden>
+                </div>
+                
+                <div class="file-list" id="file-list">
+                    <!-- سيتم عرض الملفات المرفوعة هنا -->
+                </div>
+                
+                <!-- قسم التجميع -->
+                <div class="clustering-section">
+                    <h3><i class="fas fa-object-group"></i> إعدادات التقسيم إلى مجموعات</h3>
+                    <div class="clustering-controls">
+                        <label>
+                            <span>عدد المجموعات لكل مضلع:</span>
+                            <input type="number" id="clusters-per-polygon" min="1" max="10" value="3">
+                        </label>
+                        <label>
+                            <span>أقصى نقاط لكل مجموعة:</span>
+                            <input type="number" id="max-points-per-cluster" min="1" max="100" value="20">
+                        </label>
+                        <label>
+                            <span>نطاق التجميع (بالكيلومترات):</span>
+                            <input type="number" id="cluster-radius" min="0.1" max="50" step="0.1" value="2.0">
+                        </label>
+                    </div>
+                    <div class="clustering-summary" id="clustering-summary">
+                        <i class="fas fa-info-circle"></i> سيتم تقسيم النقاط داخل كل مضلع إلى مجموعات بناءً على القرب الجغرافي
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="process-btn" onclick="processData()">
+                        <i class="fas fa-cogs"></i> بدء معالجة البيانات
+                    </button>
+                    
+                    <button class="sample-btn" onclick="loadSampleData()">
+                        <i class="fas fa-database"></i> استخدام بيانات نموذجية
+                    </button>
+                </div>
+                
+                <div class="message" id="message"></div>
+                
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+
+            <!-- قسم النتائج -->
+            <div class="results-section">
+                <h2><i class="fas fa-chart-bar"></i> نتائج المعالجة</h2>
+                
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <span class="stat-value" id="total-points">0</span>
+                        <span class="stat-label">إجمالي النقاط</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="linked-points">0</span>
+                        <span class="stat-label">النقاط المرتبطة</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="unlinked-points">0</span>
+                        <span class="stat-label">النقاط غير المرتبطة</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="total-groups">0</span>
+                        <span class="stat-label">المجموعات الكلية</span>
+                    </div>
+                </div>
+                
+                <!-- إحصائيات المجموعات -->
+                <div class="polygon-groups" id="polygon-groups-summary">
+                    <h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>
+                    <!-- سيتم ملؤها ديناميكياً -->
+                </div>
+                
+                <div class="table-container">
+                    <table class="results-table" id="results-table">
+                        <thead>
+                            <tr>
+                                <th>رقم العداد</th>
+                                <th>الطول</th>
+                                <th>العرض</th>
+                                <th>اسم المضلع</th>
+                                <th>المجموعة</th>
+                                <th>عدد النقاط في المجموعة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                            <!-- سيتم ملء الجدول هنا -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="download-section">
+                    <button class="download-btn" onclick="downloadResults()" id="download-btn" disabled>
+                        <i class="fas fa-download"></i> تحميل النتائج كملف Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم التعليمات -->
+        <div class="instructions">
+            <h2><i class="fas fa-info-circle"></i> التعليمات</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>تنسيق ملف Excel</h3>
+                    <p>يجب أن يحتوي على الأعمدة التالية: Counter_Number, Longitude, Latitude</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>تنسيق ملف KMZ</h3>
+                    <p>يجب أن يحتوي على مضللات جغرافية بأسماء واضحة</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>التقسيم إلى مجموعات</h3>
+                    <p>يتم تقسيم النقاط داخل كل مضلع إلى مجموعات بناءً على القرب الجغرافي</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>تحميل النتائج</h3>
+                    <p>يمكنك تحميل النتائج كملف Excel بعد انتهاء المعالجة</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- التذييل -->
+        <footer class="footer">
+            <p>© 2024 نظام معالجة البيانات الجغرافية | تم التطوير باستخدام HTML, CSS, JavaScript</p>
+            <p><i class="fab fa-github"></i> كود مفتوح المصدر</p>
+        </footer>
+    </div>
+
+    <!-- نافذة التحميل -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>جاري معالجة البيانات</h3>
+            <p id="loading-text">يرجى الانتظار...</p>
+        </div>
+    </div>
+
+    <script>
+        // المتغيرات العامة
+        let uploadedFiles = {
+            excel: null,
+            kmz: null
+        };
+        
+        let processedData = [];
+        let excelData = [];
+        let polygonsData = [];
+        let polygonGroups = {};
+        let groupColors = [
+            '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', 
+            '#EF476F', '#9B5DE5', '#F15BB5', '#00BBF9', '#00F5D4'
+        ];
+
+        // استمع لتغييرات الملفات
+        document.getElementById('excel-file').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files[0], 'excel');
+        });
+
+        document.getElementById('kmz-file').addEventListener('change', function(e) {
+            handleFileUpload(e.target.files[0], 'kmz');
+        });
+
+        // دالة معالجة رفع الملفات
+        function handleFileUpload(file, type) {
+            if (!file) return;
+            
+            // التحقق من نوع الملف
+            const validExtensions = {
+                excel: ['.xlsx', '.xls'],
+                kmz: ['.kmz']
+            };
+            
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validExtensions[type].includes(fileExtension)) {
+                showMessage(`نوع الملف غير مدعوم. يجب أن يكون ${validExtensions[type].join(' أو ')}`, 'error');
+                return;
+            }
+            
+            // التحقق من حجم الملف (حد أقصى 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('حجم الملف كبير جداً. الحد الأقصى 10MB', 'error');
+                return;
+            }
+            
+            // حفظ الملف
+            uploadedFiles[type] = file;
+            
+            // عرض الملف في القائمة
+            displayFileInList(file, type);
+            
+            // إذا كان ملف Excel، قراءته وعرض بياناته
+            if (type === 'excel') {
+                readExcelFile(file);
+            }
+            
+            // إذا كان ملف KMZ، قراءته واستخراج المضللات
+            if (type === 'kmz') {
+                readKMZFile(file);
+            }
+            
+            showMessage(`تم رفع ${type === 'excel' ? 'ملف Excel' : 'ملف KMZ'} بنجاح`, 'success');
+        }
+
+        // عرض الملف في القائمة
+        function displayFileInList(file, type) {
+            const fileList = document.getElementById('file-list');
+            const fileId = `${type}-${Date.now()}`;
+            
+            const fileSize = formatFileSize(file.size);
+            const fileType = type === 'excel' ? 'Excel' : 'KMZ';
+            
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.id = fileId;
+            fileItem.innerHTML = `
+                <div>
+                    <div class="file-name">
+                        <i class="fas fa-file-${type === 'excel' ? 'excel' : 'map'}"></i>
+                        ${file.name}
+                    </div>
+                    <div class="file-size">${fileSize} - ${fileType}</div>
+                </div>
+                <button onclick="removeFile('${fileId}', '${type}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            fileList.appendChild(fileItem);
+        }
+
+        // إزالة ملف من القائمة
+        function removeFile(fileId, type) {
+            const fileElement = document.getElementById(fileId);
+            if (fileElement) {
+                fileElement.remove();
+            }
+            
+            uploadedFiles[type] = null;
+            
+            if (type === 'excel') {
+                excelData = [];
+                clearResultsTable();
+            }
+            if (type === 'kmz') {
+                polygonsData = [];
+            }
+        }
+
+        // قراءة ملف Excel باستخدام SheetJS
+        function readExcelFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // الحصول على اسم الورقة الأولى
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // تحويل الورقة إلى JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if (jsonData.length === 0) {
+                        showMessage('ملف Excel فارغ أو لا يحتوي على بيانات', 'error');
+                        return;
+                    }
+                    
+                    // استخراج البيانات
+                    excelData = extractExcelData(jsonData);
+                    
+                    // عرض عينة من البيانات
+                    displaySampleData(excelData.slice(0, 5));
+                    
+                    showMessage(`تم قراءة ${excelData.length} سجل من ملف Excel`, 'success');
+                    
+                } catch (error) {
+                    console.error('خطأ في قراءة ملف Excel:', error);
+                    showMessage('خطأ في قراءة ملف Excel. تأكد من صحة الملف', 'error');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // قراءة ملف KMZ واستخراج المضللات
+        async function readKMZFile(file) {
+            try {
+                showLoading('جاري قراءة ملف KMZ...');
+                
+                // استخراج KML من KMZ
+                const zip = new JSZip();
+                const zipData = await zip.loadAsync(file);
+                
+                // البحث عن ملف KML داخل KMZ
+                let kmlFile = null;
+                for (const filename in zipData.files) {
+                    if (filename.endsWith('.kml')) {
+                        kmlFile = zipData.files[filename];
+                        break;
+                    }
+                }
+                
+                if (!kmlFile) {
+                    throw new Error('لم يتم العثور على ملف KML داخل ملف KMZ');
+                }
+                
+                // قراءة محتوى KML
+                const kmlText = await kmlFile.async('text');
+                
+                // تحليل KML
+                const parser = new DOMParser();
+                const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+                
+                // تحويل KML إلى GeoJSON
+                const geojson = toGeoJSON.kml(kmlDoc);
+                
+                // استخراج المضللات من GeoJSON
+                polygonsData = extractPolygonsFromGeoJSON(geojson);
+                
+                hideLoading();
+                showMessage(`تم استخراج ${polygonsData.length} مضلع من ملف KMZ`, 'success');
+                
+            } catch (error) {
+                console.error('خطأ في قراءة ملف KMZ:', error);
+                showMessage('خطأ في قراءة ملف KMZ. تأكد من صحة الملف', 'error');
+                hideLoading();
+            }
+        }
+
+        // استخراج المضللات من GeoJSON
+        function extractPolygonsFromGeoJSON(geojson) {
+            const polygons = [];
+            
+            if (!geojson || !geojson.features) {
+                return polygons;
+            }
+            
+            geojson.features.forEach(feature => {
+                if (feature.geometry && feature.geometry.type === 'Polygon') {
+                    const polygonName = feature.properties?.name || 
+                                      feature.properties?.Name || 
+                                      feature.properties?.description ||
+                                      `مضلع ${polygons.length + 1}`;
+                    
+                    polygons.push({
+                        name: polygonName,
+                        coordinates: feature.geometry.coordinates[0],
+                        properties: feature.properties || {}
+                    });
+                }
+            });
+            
+            return polygons;
+        }
+
+        // استخراج البيانات من Excel
+        function extractExcelData(jsonData) {
+            if (!jsonData || jsonData.length === 0) return [];
+            
+            const firstRow = jsonData[0];
+            const columns = Object.keys(firstRow);
+            
+            // البحث عن أسماء الأعمدة المحتملة
+            const counterCol = findColumn(columns, ['Counter_Number', 'Counter_No', 'Counter', 'رقم العداد', 'العداد', 'meter_number', 'meter_no']);
+            const lonCol = findColumn(columns, ['Longitude', 'Lon', 'X', 'الطول', 'الإحداثي الطولي', 'long', 'lng']);
+            const latCol = findColumn(columns, ['Latitude', 'Lat', 'Y', 'العرض', 'الإحداثي العرضي', 'lat']);
+            
+            if (!counterCol || !lonCol || !latCol) {
+                showMessage('لم يتم العثور على الأعمدة المطلوبة في ملف Excel', 'error');
+                return [];
+            }
+            
+            // استخراج البيانات
+            const extractedData = [];
+            
+            jsonData.forEach((row, index) => {
+                const counter = parseFloat(row[counterCol]) || row[counterCol] || `ID_${index + 1}`;
+                const longitude = parseFloat(row[lonCol]);
+                const latitude = parseFloat(row[latCol]);
+                
+                if (!isNaN(longitude) && !isNaN(latitude)) {
+                    extractedData.push({
+                        counter: counter,
+                        longitude: longitude,
+                        latitude: latitude,
+                        originalIndex: index
+                    });
+                }
+            });
+            
+            return extractedData;
+        }
+
+        // البحث عن عمود في المصفوفة
+        function findColumn(columns, possibleNames) {
+            const lowerColumns = columns.map(col => col.toString().toLowerCase());
+            
+            for (const name of possibleNames) {
+                const index = lowerColumns.indexOf(name.toLowerCase());
+                if (index !== -1) {
+                    return columns[index];
+                }
+            }
+            
+            return null;
+        }
+
+        // عرض عينة من البيانات
+        function displaySampleData(sampleData) {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+            
+            if (sampleData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                            لم يتم تحميل أي بيانات بعد
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            sampleData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.counter}</td>
+                    <td>${item.longitude.toFixed(6)}</td>
+                    <td>${item.latitude.toFixed(6)}</td>
+                    <td style="color: #f39c12;">لم تتم المعالجة بعد</td>
+                    <td>-</td>
+                    <td>-</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // تحديث الإحصائيات
+            updateStats({
+                total: sampleData.length,
+                linked: 0,
+                unlinked: sampleData.length,
+                totalGroups: 0
+            });
+        }
+
+        // مسح جدول النتائج
+        function clearResultsTable() {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                        لم يتم تحميل أي بيانات بعد
+                    </td>
+                </tr>
+            `;
+            
+            updateStats({ total: 0, linked: 0, unlinked: 0, totalGroups: 0 });
+            document.getElementById('download-btn').disabled = true;
+            
+            // مسح إحصائيات المجموعات
+            document.getElementById('polygon-groups-summary').innerHTML = `
+                <h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>
+                <p style="color: #666; text-align: center;">لا توجد بيانات للعرض</p>
+            `;
+        }
+
+        // تحميل البيانات النموذجية
+        function loadSampleData() {
+            showLoading('جاري تحميل البيانات النموذجية...');
+            
+            // محاكاة تأخير الشبكة
+            setTimeout(() => {
+                // بيانات نموذجية (من الصورة)
+                const sampleExcelData = [
+                    { counter: 84995769, longitude: 41.597424, latitude: 27.422577 },
+                    { counter: 82384325, longitude: 42.935330, latitude: 28.256882 },
+                    { counter: 65445382, longitude: 41.675612, latitude: 27.522625 },
+                    { counter: 65382907, longitude: 41.749193, latitude: 27.549664 },
+                    { counter: 71037601, longitude: 42.933397, latitude: 28.260661 },
+                    { counter: 61211589, longitude: 41.643443, latitude: 27.527097 },
+                    { counter: 63952433, longitude: 41.652373, latitude: 27.468442 },
+                    { counter: 10227804, longitude: 41.731682, latitude: 27.567220 },
+                    // إضافة المزيد من البيانات النموذجية
+                    { counter: 84995770, longitude: 41.600000, latitude: 27.430000 },
+                    { counter: 82384326, longitude: 42.940000, latitude: 28.260000 },
+                    { counter: 65445383, longitude: 41.680000, latitude: 27.530000 },
+                    { counter: 65382908, longitude: 41.750000, latitude: 27.550000 },
+                    { counter: 71037602, longitude: 42.935000, latitude: 28.265000 },
+                    { counter: 61211590, longitude: 41.645000, latitude: 27.530000 },
+                    { counter: 63952434, longitude: 41.655000, latitude: 27.470000 },
+                    { counter: 10227805, longitude: 41.735000, latitude: 27.570000 }
+                ];
+                
+                // حفظ البيانات
+                excelData = sampleExcelData;
+                
+                // إنشاء مضللات نموذجية
+                polygonsData = [
+                    {
+                        name: "مضلع المنطقة الشرقية",
+                        coordinates: [
+                            [41.5, 27.4],
+                            [41.8, 27.4],
+                            [41.8, 27.6],
+                            [41.5, 27.6],
+                            [41.5, 27.4]
+                        ]
+                    },
+                    {
+                        name: "مضلع المنطقة الشمالية",
+                        coordinates: [
+                            [42.8, 28.2],
+                            [43.0, 28.2],
+                            [43.0, 28.3],
+                            [42.8, 28.3],
+                            [42.8, 28.2]
+                        ]
+                    },
+                    {
+                        name: "مضلع المنطقة الغربية",
+                        coordinates: [
+                            [41.6, 27.5],
+                            [41.9, 27.5],
+                            [41.9, 27.7],
+                            [41.6, 27.7],
+                            [41.6, 27.5]
+                        ]
+                    }
+                ];
+                
+                // عرض الملفات في القائمة
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = `
+                    <div class="file-item">
+                        <div>
+                            <div class="file-name">
+                                <i class="fas fa-file-excel"></i>
+                                sample_data.xlsx
+                            </div>
+                            <div class="file-size">45.2 KB - Excel</div>
+                        </div>
+                    </div>
+                    <div class="file-item">
+                        <div>
+                            <div class="file-name">
+                                <i class="fas fa-map"></i>
+                                sample_polygons.kmz
+                            </div>
+                            <div class="file-size">120.5 KB - KMZ</div>
+                        </div>
+                    </div>
+                `;
+                
+                // عرض البيانات
+                displaySampleData(excelData);
+                
+                hideLoading();
+                showMessage('✅ تم تحميل البيانات النموذجية بنجاح', 'success');
+                
+            }, 1500);
+        }
+
+        // معالجة البيانات
+        function processData() {
+            if (excelData.length === 0) {
+                showMessage('❌ لا توجد بيانات للمعالجة. يرجى رفع ملف Excel أولاً', 'error');
+                return;
+            }
+            
+            showLoading('جاري معالجة البيانات...');
+            
+            // محاكاة تقدم المعالجة
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                document.getElementById('progress').style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    
+                    // معالجة البيانات
+                    setTimeout(() => {
+                        processDataSimulation();
+                        hideLoading();
+                        document.getElementById('progress').style.width = '0%';
+                    }, 800);
+                }
+            }, 200);
+        }
+
+        // محاكاة معالجة البيانات
+        function processDataSimulation() {
+            // معالجة البيانات
+            processedData = excelData.map(item => {
+                let polygonName = "غير مرتبط";
+                
+                // التحقق مما إذا كانت النقطة داخل أي مضلع
+                for (const polygon of polygonsData) {
+                    if (pointInPolygon(item.longitude, item.latitude, polygon.coordinates)) {
+                        polygonName = polygon.name;
+                        break;
+                    }
+                }
+                
+                return {
+                    ...item,
+                    polygon: polygonName
+                };
+            });
+            
+            // تقسيم النقاط إلى مجموعات داخل كل مضلع
+            polygonGroups = {};
+            const clustersPerPolygon = parseInt(document.getElementById('clusters-per-polygon').value) || 3;
+            const maxPointsPerCluster = parseInt(document.getElementById('max-points-per-cluster').value) || 20;
+            const clusterRadiusKm = parseFloat(document.getElementById('cluster-radius').value) || 2.0;
+            
+            // تجميع النقاط حسب المضلع
+            const pointsByPolygon = {};
+            processedData.forEach(item => {
+                if (item.polygon !== "غير مرتبط") {
+                    if (!pointsByPolygon[item.polygon]) {
+                        pointsByPolygon[item.polygon] = [];
+                    }
+                    pointsByPolygon[item.polygon].push(item);
+                }
+            });
+            
+            // تطبيق التجميع على كل مضلع
+            for (const polygonName in pointsByPolygon) {
+                const points = pointsByPolygon[polygonName];
+                
+                // تطبيق خوارزمية التجميع بناءً على القرب الجغرافي
+                const clusters = clusterPointsByDistance(points, clusterRadiusKm, maxPointsPerCluster, clustersPerPolygon);
+                
+                // تعيين رقم المجموعة لكل نقطة
+                clusters.forEach((cluster, clusterIndex) => {
+                    cluster.forEach(point => {
+                        point.group = clusterIndex + 1;
+                        point.groupSize = cluster.length;
+                    });
+                });
+                
+                polygonGroups[polygonName] = {
+                    totalPoints: points.length,
+                    totalClusters: clusters.length,
+                    clusters: clusters
+                };
+            }
+            
+            // تحديث البيانات المعالجة
+            processedData.forEach(item => {
+                if (item.polygon !== "غير مرتبط" && item.group) {
+                    // تم تعيين المجموعة بالفعل
+                }
+            });
+            
+            // عرض النتائج
+            displayResults(processedData);
+            
+            // عرض إحصائيات المجموعات
+            displayPolygonGroupsSummary();
+            
+            // تمكين زر التحميل
+            document.getElementById('download-btn').disabled = false;
+            
+            showMessage('✅ تمت معالجة البيانات بنجاح', 'success');
+        }
+
+        // خوارزمية التجميع بناءً على المسافة
+        function clusterPointsByDistance(points, maxDistanceKm, maxPointsPerCluster, maxClusters) {
+            if (points.length === 0) return [];
+            
+            const clusters = [];
+            const visited = new Set();
+            
+            // تحويل المسافة من كيلومترات إلى درجات (تقريب)
+            const maxDistanceDeg = maxDistanceKm / 111; // 1 درجة ≈ 111 كم
+            
+            // تحديد عدد المجموعات بناءً على عدد النقاط والحد الأقصى
+            const targetClusters = Math.min(
+                maxClusters,
+                Math.ceil(points.length / maxPointsPerCluster)
+            );
+            
+            // إذا كان عدد النقاط صغير، نعيد مجموعة واحدة
+            if (points.length <= maxPointsPerCluster) {
+                return [points];
+            }
+            
+            // خوارزمية التجميع البسيطة بناءً على القرب
+            for (let i = 0; i < points.length; i++) {
+                if (visited.has(i)) continue;
+                
+                const currentPoint = points[i];
+                const cluster = [currentPoint];
+                visited.add(i);
+                
+                // البحث عن النقاط القريبة
+                for (let j = i + 1; j < points.length; j++) {
+                    if (visited.has(j)) continue;
+                    
+                    const otherPoint = points[j];
+                    const distance = calculateDistance(
+                        currentPoint.longitude, currentPoint.latitude,
+                        otherPoint.longitude, otherPoint.latitude
+                    );
+                    
+                    if (distance <= maxDistanceDeg && cluster.length < maxPointsPerCluster) {
+                        cluster.push(otherPoint);
+                        visited.add(j);
+                    }
+                }
+                
+                clusters.push(cluster);
+                
+                // إذا وصلنا إلى العدد المطلوب من المجموعات، نوقف
+                if (clusters.length >= targetClusters) {
+                    // نضيف النقاط المتبقية إلى أقرب مجموعة
+                    for (let k = 0; k < points.length; k++) {
+                        if (!visited.has(k)) {
+                            const remainingPoint = points[k];
+                            let closestClusterIndex = 0;
+                            let minDistance = Infinity;
+                            
+                            for (let c = 0; c < clusters.length; c++) {
+                                const clusterCenter = getClusterCenter(clusters[c]);
+                                const distance = calculateDistance(
+                                    remainingPoint.longitude, remainingPoint.latitude,
+                                    clusterCenter.longitude, clusterCenter.latitude
+                                );
+                                
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    closestClusterIndex = c;
+                                }
+                            }
+                            
+                            clusters[closestClusterIndex].push(remainingPoint);
+                            visited.add(k);
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            return clusters;
+        }
+
+        // حساب المسافة بين نقطتين (بالدرجات)
+        function calculateDistance(lon1, lat1, lon2, lat2) {
+            const dx = lon1 - lon2;
+            const dy = lat1 - lat2;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // حساب مركز المجموعة
+        function getClusterCenter(points) {
+            const sumLon = points.reduce((sum, p) => sum + p.longitude, 0);
+            const sumLat = points.reduce((sum, p) => sum + p.latitude, 0);
+            
+            return {
+                longitude: sumLon / points.length,
+                latitude: sumLat / points.length
+            };
+        }
+
+        // دالة للتحقق مما إذا كانت النقطة داخل المضلع
+        function pointInPolygon(longitude, latitude, polygon) {
+            // خوارزمية Ray Casting
+            let inside = false;
+            
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i][0], yi = polygon[i][1];
+                const xj = polygon[j][0], yj = polygon[j][1];
+                
+                const intersect = ((yi > latitude) !== (yj > latitude)) &&
+                    (longitude < (xj - xi) * (latitude - yi) / (yj - yi) + xi);
+                
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
+        }
+
+        // عرض النتائج
+        function displayResults(data) {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+            
+            let totalGroups = 0;
+            const groupCounts = {};
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const polygonCellClass = item.polygon === "غير مرتبط" ? 'error' : 'success';
+                const group = item.group || 0;
+                const groupSize = item.groupSize || 0;
+                
+                // حساب لون المجموعة
+                const groupColor = group > 0 ? groupColors[(group - 1) % groupColors.length] : '#ccc';
+                
+                if (group > 0 && item.polygon !== "غير مرتبط") {
+                    if (!groupCounts[item.polygon]) {
+                        groupCounts[item.polygon] = new Set();
+                    }
+                    groupCounts[item.polygon].add(group);
+                }
+                
+                row.innerHTML = `
+                    <td>${item.counter}</td>
+                    <td>${item.longitude.toFixed(6)}</td>
+                    <td>${item.latitude.toFixed(6)}</td>
+                    <td style="color: ${item.polygon === "غير مرتبط" ? '#e74c3c' : '#27ae60'}; font-weight: bold;">
+                        ${item.polygon}
+                    </td>
+                    <td>
+                        ${group > 0 ? `<span class="group-badge" style="background-color: ${groupColor};">${group}</span>` : '-'}
+                    </td>
+                    <td>${groupSize > 0 ? groupSize : '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // حساب إجمالي المجموعات
+            for (const polygon in groupCounts) {
+                totalGroups += groupCounts[polygon].size;
+            }
+            
+            // تحديث الإحصائيات
+            const linkedCount = data.filter(item => item.polygon !== "غير مرتبط").length;
+            updateStats({
+                total: data.length,
+                linked: linkedCount,
+                unlinked: data.length - linkedCount,
+                totalGroups: totalGroups
+            });
+        }
+
+        // عرض إحصائيات المجموعات
+        function displayPolygonGroupsSummary() {
+            const summaryDiv = document.getElementById('polygon-groups-summary');
+            
+            if (Object.keys(polygonGroups).length === 0) {
+                summaryDiv.innerHTML = `
+                    <h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>
+                    <p style="color: #666; text-align: center;">لا توجد بيانات للعرض</p>
+                `;
+                return;
+            }
+            
+            let html = `<h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>`;
+            
+            for (const polygonName in polygonGroups) {
+                const stats = polygonGroups[polygonName];
+                html += `
+                    <div class="polygon-group-item">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <strong style="color: #2c3e50;">${polygonName}</strong>
+                            <span style="color: #666;">${stats.totalPoints} نقطة</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 5px;">
+                                ${Array.from({length: stats.totalClusters}, (_, i) => 
+                                    `<span class="group-badge" style="background-color: ${groupColors[i % groupColors.length]}">${i + 1}</span>`
+                                ).join('')}
+                            </div>
+                            <span style="color: #666; font-size: 0.9rem;">${stats.totalClusters} مجموعة</span>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">
+                            ${stats.clusters.map((cluster, idx) => 
+                                `المجموعة ${idx + 1}: ${cluster.length} نقطة`
+                            ).join(' | ')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            summaryDiv.innerHTML = html;
+        }
+
+        // تحديث الإحصائيات
+        function updateStats({ total, linked, unlinked, totalGroups }) {
+            document.getElementById('total-points').textContent = total;
+            document.getElementById('linked-points').textContent = linked;
+            document.getElementById('unlinked-points').textContent = unlinked;
+            document.getElementById('total-groups').textContent = totalGroups;
+        }
+
+        // تحميل النتائج كملف Excel
+        function downloadResults() {
+            if (processedData.length === 0) {
+                showMessage('❌ لا توجد نتائج للتحميل', 'error');
+                return;
+            }
+            
+            showLoading('جاري إنشاء ملف Excel...');
+            
+            setTimeout(() => {
+                // إنشاء ورقة عمل
+                const worksheetData = [
+                    ["رقم العداد", "الإحداثي الطولي", "الإحداثي العرضي", "اسم المضلع", "المجموعة", "عدد النقاط في المجموعة", "حالة الربط"]
+                ];
+                
+                processedData.forEach(item => {
+                    worksheetData.push([
+                        item.counter,
+                        item.longitude,
+                        item.latitude,
+                        item.polygon,
+                        item.group || '',
+                        item.groupSize || '',
+                        item.polygon === "غير مرتبط" ? "غير مرتبط" : "مرتبط"
+                    ]);
+                });
+                
+                // إضافة ورقة ثانية للإحصائيات
+                const statsWorksheetData = [
+                    ["إحصائيات المعالجة"],
+                    [],
+                    ["إجمالي النقاط", processedData.length],
+                    ["النقاط المرتبطة", processedData.filter(item => item.polygon !== "غير مرتبط").length],
+                    ["النقاط غير المرتبطة", processedData.filter(item => item.polygon === "غير مرتبط").length],
+                    ["إجمالي المجموعات", document.getElementById('total-groups').textContent],
+                    [],
+                    ["توزيع المجموعات حسب المضلع"]
+                ];
+                
+                for (const polygonName in polygonGroups) {
+                    const stats = polygonGroups[polygonName];
+                    statsWorksheetData.push([polygonName, `${stats.totalPoints} نقطة`, `${stats.totalClusters} مجموعة`]);
+                    
+                    stats.clusters.forEach((cluster, idx) => {
+                        statsWorksheetData.push([`  المجموعة ${idx + 1}`, `${cluster.length} نقطة`, '']);
+                    });
+                }
+                
+                const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+                const statsWorksheet = XLSX.utils.aoa_to_sheet(statsWorksheetData);
+                
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "النتائج");
+                XLSX.utils.book_append_sheet(workbook, statsWorksheet, "الإحصائيات");
+                
+                // إنشاء الملف
+                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([excelBuffer], { 
+                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+                });
+                
+                // تحميل الملف
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
+                saveAs(blob, `النتائج_المعالجة_${timestamp}.xlsx`);
+                
+                hideLoading();
+                showMessage('✅ تم تحميل الملف بنجاح', 'success');
+                
+            }, 1500);
+        }
+
+        // دوال مساعدة
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' بايت';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' كيلوبايت';
+            return (bytes / 1048576).toFixed(1) + ' ميجابايت';
+        }
+
+        function showLoading(message = 'جاري المعالجة...') {
+            document.getElementById('loading-text').textContent = message;
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            
+            // إخفاء الرسالة بعد 5 ثواني
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // تحميل البيانات النموذجية عند فتح الصفحة
+        window.addEventListener('load', function() {
+            loadSampleData();
+        });
+
+        // دعم سحب وإفلات الملفات
+        const uploadAreas = document.querySelectorAll('.upload-area');
+        
+        uploadAreas.forEach(area => {
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#3498db';
+                this.style.backgroundColor = '#e8f4fc';
+            });
+            
+            area.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#ddd';
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#ddd';
+                this.style.backgroundColor = '#f8f9fa';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const type = this.id.includes('excel') ? 'excel' : 'kmz';
+                    handleFileUpload(files[0], type);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
