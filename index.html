@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام معالجة البيانات الجغرافية</title>
+    <title>نظام معالجة البيانات الجغرافية - التوزيع الجغرافي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
@@ -212,8 +212,8 @@
             transform: translateY(-2px);
         }
 
-        /* قسم التجميع */
-        .clustering-section {
+        /* قسم التوزيع الجغرافي */
+        .distribution-section {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 10px;
@@ -221,7 +221,7 @@
             border: 2px solid #e9ecef;
         }
 
-        .clustering-section h3 {
+        .distribution-section h3 {
             color: #2c3e50;
             margin-bottom: 15px;
             font-size: 1.1rem;
@@ -230,26 +230,26 @@
             gap: 10px;
         }
 
-        .clustering-controls {
+        .distribution-controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
 
         @media (max-width: 768px) {
-            .clustering-controls {
+            .distribution-controls {
                 grid-template-columns: 1fr;
             }
         }
 
-        .clustering-controls label {
+        .distribution-controls label {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 5px;
         }
 
-        .clustering-controls input {
+        .distribution-controls input {
             width: 80px;
             padding: 8px;
             border: 1px solid #ddd;
@@ -257,7 +257,7 @@
             text-align: center;
         }
 
-        .clustering-summary {
+        .distribution-summary {
             margin-top: 10px;
             font-size: 0.9rem;
             color: #666;
@@ -636,8 +636,8 @@
     <div class="container">
         <!-- شريط العنوان -->
         <header class="header">
-            <h1><i class="fas fa-map-marked-alt"></i> نظام معالجة البيانات الجغرافية</h1>
-            <p>ربط نقاط الإحداثيات بالمضللات الجغرافية وتقسيمها إلى مجموعات جغرافية متقاربة</p>
+            <h1><i class="fas fa-map-marked-alt"></i> نظام التوزيع الجغرافي المتقدم</h1>
+            <p>توزيع النقاط جغرافياً بناءً على القرب الجغرافي والترتيب من الجنوب إلى الشمال</p>
         </header>
 
         <div class="main-content">
@@ -671,31 +671,27 @@
                     <!-- سيتم عرض الملفات المرفوعة هنا -->
                 </div>
                 
-                <!-- قسم التجميع -->
-                <div class="clustering-section">
-                    <h3><i class="fas fa-object-group"></i> إعدادات التقسيم إلى مجموعات جغرافية</h3>
-                    <div class="clustering-controls">
+                <!-- قسم التوزيع الجغرافي -->
+                <div class="distribution-section">
+                    <h3><i class="fas fa-object-group"></i> إعدادات التوزيع الجغرافي</h3>
+                    <div class="distribution-controls">
                         <label>
-                            <span>عدد المجموعات لكل مضلع:</span>
-                            <input type="number" id="clusters-per-polygon" min="1" max="20" value="3">
+                            <span>عدد النقاط في كل مجموعة:</span>
+                            <input type="number" id="points-per-group" min="1" max="1000" value="20">
                         </label>
                         <label>
-                            <span>أقصى نقاط لكل مجموعة:</span>
-                            <input type="number" id="max-points-per-cluster" min="1" max="500" value="20">
-                        </label>
-                        <label>
-                            <span>نطاق التجميع (بالكيلومتر):</span>
-                            <input type="number" id="cluster-radius" min="0.1" max="50" step="0.1" value="1.0">
+                            <span>الحد الأدنى للمجموعة:</span>
+                            <input type="number" id="min-group-size" min="1" max="100" value="15">
                         </label>
                     </div>
-                    <div class="clustering-summary" id="clustering-summary">
-                        <i class="fas fa-info-circle"></i> سيتم تجميع النقاط القريبة جغرافياً في نفس المجموعة مع تحقيق توازن في عدد النقاط
+                    <div class="distribution-summary" id="distribution-summary">
+                        <i class="fas fa-info-circle"></i> سيتم توزيع النقاط جغرافياً بناءً على القرب الجغرافي فقط مع التوزيع المتساوي والترتيب من الجنوب إلى الشمال
                     </div>
                 </div>
                 
                 <div class="action-buttons">
                     <button class="process-btn" onclick="processData()">
-                        <i class="fas fa-cogs"></i> بدء معالجة البيانات
+                        <i class="fas fa-cogs"></i> بدء التوزيع الجغرافي
                     </button>
                     
                     <button class="sample-btn" onclick="loadSampleData()">
@@ -717,7 +713,7 @@
 
             <!-- قسم النتائج -->
             <div class="results-section">
-                <h2><i class="fas fa-chart-bar"></i> نتائج المعالجة</h2>
+                <h2><i class="fas fa-chart-bar"></i> نتائج التوزيع الجغرافي</h2>
                 
                 <div class="stats-container">
                     <div class="stat-box">
@@ -762,8 +758,9 @@
                                 <th>رقم العداد</th>
                                 <th>الطول</th>
                                 <th>العرض</th>
+                                <th>المجموعة مع المضلع</th>
                                 <th>اسم المضلع</th>
-                                <th>المجموعة</th>
+                                <th>رقم المجموعة</th>
                                 <th>عدد النقاط في المجموعة</th>
                                 <th>المسافة إلى المركز (كم)</th>
                             </tr>
@@ -788,31 +785,30 @@
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <h3>تنسيق ملف Excel</h3>
-                    <p>يدعم الملفات حتى 50MB. يجب أن يحتوي على أعمدة: رقم العداد، الإحداثي الطولي، الإحداثي العرضي</p>
+                    <h3>التوزيع الجغرافي</h3>
+                    <p>يتم توزيع النقاط بناءً على القرب الجغرافي فقط مع مراعاة عدد النقاط المحدد لكل مجموعة</p>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
-                    <h3>تنسيق ملف KMZ</h3>
-                    <p>يدعم الملفات حتى 100MB. يجب أن يحتوي على مضللات جغرافية بأسماء واضحة</p>
+                    <h3>الترتيب من الجنوب للشمال</h3>
+                    <p>يبدأ التوزيع من النقطة الجنوبية وينتهي بالشمالية مع توزيع متساوي للمجموعات</p>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <h3>التجميع الجغرافي</h3>
-                    <p>يتم تجميع النقاط القريبة جغرافياً في نفس المجموعة مع تحقيق توازن في عدد النقاط بين المجموعات</p>
+                    <h3>التوزيع المتساوي</h3>
+                    <p>جميع المجموعات متساوية في العدد تقريباً، والاختلاف فقط في المجموعة الأخيرة وقد تكون أقل</p>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
-                    <h3>تحميل النتائج</h3>
-                    <p>يمكنك تحميل النتائج كملف Excel بعد انتهاء المعالجة. يدعم الملفات الكبيرة</p>
+                    <h3>عدم التداخل</h3>
+                    <p>لا توجد مجموعة في المنتصف مختلفة في العدد، مع تجنب التداخل بين المجموعات</p>
                 </div>
             </div>
         </div>
 
         <!-- التذييل -->
         <footer class="footer">
-            <p>© 2024 نظام معالجة البيانات الجغرافية | تم التطوير باستخدام HTML, CSS, JavaScript</p>
-            <p><i class="fab fa-github"></i> كود مفتوح المصدر</p>
+            <p>© 2024 نظام التوزيع الجغرافي المتقدم | تم التطوير باستخدام HTML, CSS, JavaScript</p>
         </footer>
     </div>
 
@@ -820,7 +816,7 @@
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-content">
             <div class="spinner"></div>
-            <h3>جاري معالجة البيانات</h3>
+            <h3>جاري توزيع البيانات جغرافياً</h3>
             <p id="loading-text">يرجى الانتظار...</p>
             <div class="progress-bar" style="margin-top: 20px;">
                 <div class="progress" id="detailed-progress"></div>
@@ -844,7 +840,7 @@
         let polygonsData = [];
         let polygonGroups = {};
         let polygonBounds = {};
-        let clusterCenters = {}; // مراكز المجموعات
+        let clusterCenters = {};
         
         // ألوان للمجموعات
         let groupColors = [
@@ -1221,7 +1217,7 @@
             if (sampleData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                        <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
                             <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
                             لم يتم تحميل أي بيانات بعد
                         </td>
@@ -1237,6 +1233,7 @@
                     <td>${item.longitude.toFixed(6)}</td>
                     <td>${item.latitude.toFixed(6)}</td>
                     <td style="color: #f39c12;">لم تتم المعالجة بعد</td>
+                    <td>-</td>
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
@@ -1258,7 +1255,7 @@
             const tbody = document.getElementById('results-body');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #666;">
                         <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
                         لم يتم تحميل أي بيانات بعد
                     </td>
@@ -1285,40 +1282,67 @@
             
             setTimeout(() => {
                 // بيانات نموذجية متقاربة جغرافياً
-                const sampleExcelData = [
-                    // مجموعة 1 - نقاط متقاربة جداً
-                    { counter: 1001, longitude: 41.597424, latitude: 27.422577 },
-                    { counter: 1002, longitude: 41.597524, latitude: 27.422677 },
-                    { counter: 1003, longitude: 41.597624, latitude: 27.422777 },
-                    { counter: 1004, longitude: 41.597724, latitude: 27.422877 },
-                    { counter: 1005, longitude: 41.597824, latitude: 27.422977 },
-                    
-                    // مجموعة 2 - نقاط متقاربة
-                    { counter: 1006, longitude: 41.598424, latitude: 27.423577 },
-                    { counter: 1007, longitude: 41.598524, latitude: 27.423677 },
-                    { counter: 1008, longitude: 41.598624, latitude: 27.423777 },
-                    { counter: 1009, longitude: 41.598724, latitude: 27.423877 },
-                    { counter: 1010, longitude: 41.598824, latitude: 27.423977 },
-                    
-                    // مجموعة 3 - نقاط متقاربة
-                    { counter: 1011, longitude: 41.599424, latitude: 27.424577 },
-                    { counter: 1012, longitude: 41.599524, latitude: 27.424677 },
-                    { counter: 1013, longitude: 41.599624, latitude: 27.424777 },
-                    { counter: 1014, longitude: 41.599724, latitude: 27.424877 },
-                    { counter: 1015, longitude: 41.599824, latitude: 27.424977 },
-                ];
+                const sampleExcelData = [];
+                
+                // إنشاء مجموعات جغرافية متقاربة
+                // المجموعة 1 - جنوب
+                for (let i = 1; i <= 25; i++) {
+                    sampleExcelData.push({
+                        counter: 1000 + i,
+                        longitude: 41.597 + (i * 0.0005),
+                        latitude: 27.422 + (i * 0.0005)
+                    });
+                }
+                
+                // المجموعة 2 - وسط
+                for (let i = 1; i <= 25; i++) {
+                    sampleExcelData.push({
+                        counter: 2000 + i,
+                        longitude: 41.600 + (i * 0.0005),
+                        latitude: 27.425 + (i * 0.0005)
+                    });
+                }
+                
+                // المجموعة 3 - شمال
+                for (let i = 1; i <= 25; i++) {
+                    sampleExcelData.push({
+                        counter: 3000 + i,
+                        longitude: 41.603 + (i * 0.0005),
+                        latitude: 27.428 + (i * 0.0005)
+                    });
+                }
                 
                 excelData = sampleExcelData;
                 
                 polygonsData = [
                     {
-                        name: "مضلع المنطقة المركزية",
+                        name: "المنطقة الجنوبية",
                         coordinates: [
                             [41.596, 27.421],
-                            [41.601, 27.421],
-                            [41.601, 27.426],
-                            [41.596, 27.426],
+                            [41.599, 27.421],
+                            [41.599, 27.424],
+                            [41.596, 27.424],
                             [41.596, 27.421]
+                        ]
+                    },
+                    {
+                        name: "المنطقة الوسطى",
+                        coordinates: [
+                            [41.599, 27.424],
+                            [41.602, 27.424],
+                            [41.602, 27.427],
+                            [41.599, 27.427],
+                            [41.599, 27.424]
+                        ]
+                    },
+                    {
+                        name: "المنطقة الشمالية",
+                        coordinates: [
+                            [41.602, 27.427],
+                            [41.605, 27.427],
+                            [41.605, 27.430],
+                            [41.602, 27.430],
+                            [41.602, 27.427]
                         ]
                     }
                 ];
@@ -1359,7 +1383,7 @@
         }
 
         // ============================================
-        // معالجة البيانات
+        // معالجة البيانات - التوزيع الجغرافي الجديد
         // ============================================
 
         function processData() {
@@ -1369,10 +1393,10 @@
             }
             
             if (polygonsData.length === 0) {
-                showMessage('⚠️ لم يتم رفع ملف KMZ. سيتم عرض النقاط فقط بدون ربط بالمضللات', 'warning');
+                showMessage('⚠️ لم يتم رفع ملف KMZ. سيتم توزيع النقاط فقط بدون ربط بالمضللات', 'warning');
             }
             
-            showLoading('جاري معالجة البيانات...');
+            showLoading('جاري توزيع البيانات جغرافياً...');
             
             setTimeout(() => {
                 processDataInBatches();
@@ -1414,7 +1438,7 @@
                 if (currentBatch < totalBatches) {
                     setTimeout(processBatch, 10);
                 } else {
-                    completeProcessing();
+                    completeGeographicDistribution();
                 }
             };
             
@@ -1460,17 +1484,17 @@
         }
 
         // ============================================
-        // خوارزمية تجميع جغرافية محسنة
+        // خوارزمية التوزيع الجغرافي المحسنة
         // ============================================
 
-        function completeProcessing() {
+        function completeGeographicDistribution() {
             polygonGroups = {};
             clusterCenters = {};
             
-            const clustersPerPolygon = parseInt(document.getElementById('clusters-per-polygon').value) || 3;
-            const maxPointsPerCluster = parseInt(document.getElementById('max-points-per-cluster').value) || 20;
-            const clusterRadiusKm = parseFloat(document.getElementById('cluster-radius').value) || 1.0;
+            const pointsPerGroup = parseInt(document.getElementById('points-per-group').value) || 20;
+            const minGroupSize = parseInt(document.getElementById('min-group-size').value) || 15;
             
+            // تجميع النقاط حسب المضلع
             const pointsByPolygon = {};
             processedData.forEach(item => {
                 if (item.polygon !== "غير مرتبط") {
@@ -1481,51 +1505,76 @@
                 }
             });
             
+            // توزيع كل مضلع على حدة
             for (const polygonName in pointsByPolygon) {
                 const points = pointsByPolygon[polygonName];
                 
                 if (points.length === 0) continue;
                 
-                // تطبيق خوارزمية التجميع الجغرافي المتقدم
-                const clusters = advancedGeographicClustering(
+                // تطبيق خوارزمية التوزيع الجغرافي المتقدم
+                const distributionResult = distributePointsByProximity(
                     points, 
-                    clustersPerPolygon, 
-                    maxPointsPerCluster, 
-                    clusterRadiusKm
+                    pointsPerGroup,
+                    minGroupSize
                 );
                 
-                // تخزين مراكز المجموعات
-                const centers = [];
-                clusters.forEach((cluster, index) => {
-                    if (cluster.length > 0) {
-                        const center = calculateClusterCenter(cluster);
-                        centers.push({
-                            clusterId: index + 1,
-                            longitude: center.longitude,
-                            latitude: center.latitude,
-                            pointsCount: cluster.length
-                        });
-                        
-                        cluster.forEach(point => {
-                            point.group = index + 1;
-                            point.groupSize = cluster.length;
-                            point.distanceToCenter = calculateDistanceInKm(
-                                point.longitude,
-                                point.latitude,
-                                center.longitude,
-                                center.latitude
-                            );
-                        });
-                    }
-                });
-                
-                clusterCenters[polygonName] = centers;
+                // تخزين نتائج التوزيع
                 polygonGroups[polygonName] = {
                     totalPoints: points.length,
-                    totalClusters: clusters.length,
-                    clusters: clusters,
-                    clusterStats: calculateClusterStats(clusters)
+                    totalGroups: distributionResult.clusters.length,
+                    clusters: distributionResult.clusters,
+                    distributionStats: distributionResult.stats,
+                    groupAssignments: distributionResult.groupAssignments
                 };
+                
+                // تحديث البيانات الأصلية بالتوزيع
+                distributionResult.groupAssignments.forEach(assignment => {
+                    const point = processedData.find(p => 
+                        p.counter === assignment.counter && 
+                        p.longitude === assignment.longitude && 
+                        p.latitude === assignment.latitude
+                    );
+                    
+                    if (point) {
+                        point.group = assignment.group;
+                        point.groupSize = assignment.groupSize;
+                        point.distanceToCenter = assignment.distanceToCenter;
+                        point.groupPolygonCombo = `${assignment.group}_${polygonName}`;
+                    }
+                });
+            }
+            
+            // معالجة النقاط غير المرتبطة
+            const unlinkedPoints = processedData.filter(item => item.polygon === "غير مرتبط");
+            if (unlinkedPoints.length > 0) {
+                const distributionResult = distributePointsByProximity(
+                    unlinkedPoints,
+                    pointsPerGroup,
+                    minGroupSize
+                );
+                
+                polygonGroups["غير مرتبط"] = {
+                    totalPoints: unlinkedPoints.length,
+                    totalGroups: distributionResult.clusters.length,
+                    clusters: distributionResult.clusters,
+                    distributionStats: distributionResult.stats,
+                    groupAssignments: distributionResult.groupAssignments
+                };
+                
+                distributionResult.groupAssignments.forEach(assignment => {
+                    const point = processedData.find(p => 
+                        p.counter === assignment.counter && 
+                        p.longitude === assignment.longitude && 
+                        p.latitude === assignment.latitude
+                    );
+                    
+                    if (point) {
+                        point.group = assignment.group;
+                        point.groupSize = assignment.groupSize;
+                        point.distanceToCenter = assignment.distanceToCenter;
+                        point.groupPolygonCombo = `${assignment.group}_غير مرتبط`;
+                    }
+                });
             }
             
             displayResultsPage(1);
@@ -1533,310 +1582,196 @@
             document.getElementById('download-btn').disabled = false;
             
             hideLoading();
-            showMessage(`✅ تمت معالجة ${processedData.length} نقطة بنجاح`, 'success');
+            showMessage(`✅ تم توزيع ${processedData.length} نقطة جغرافياً بنجاح`, 'success');
         }
 
-        // خوارزمية تجميع جغرافية متقدمة
-        function advancedGeographicClustering(points, targetClusters, maxPointsPerCluster, maxRadiusKm) {
-            if (points.length === 0) return [];
-            
-            // إذا كان عدد النقاط أقل من الحد الأقصى للمجموعة الواحدة
-            if (points.length <= maxPointsPerCluster) {
-                return [points];
+        // خوارزمية التوزيع الجغرافي الأساسية
+        function distributePointsByProximity(points, targetPointsPerGroup, minGroupSize) {
+            if (points.length === 0) {
+                return { clusters: [], stats: [], groupAssignments: [] };
             }
             
-            // حساب عدد المجموعات بناءً على عدد النقاط والحد الأقصى
-            const idealClusters = Math.min(
-                targetClusters,
-                Math.ceil(points.length / maxPointsPerCluster)
-            );
-            
-            // ترتيب النقاط من الجنوب إلى الشمال
+            // 1. ترتيب النقاط من الجنوب إلى الشمال (من الأصغر إلى الأكبر في خط العرض)
             const sortedPoints = [...points].sort((a, b) => a.latitude - b.latitude);
             
-            // تحديد مراكز أولية للمجموعات
-            const initialCenters = [];
-            const step = Math.floor(sortedPoints.length / idealClusters);
+            // 2. حساب عدد المجموعات المطلوبة
+            const idealNumberOfGroups = Math.ceil(sortedPoints.length / targetPointsPerGroup);
             
-            for (let i = 0; i < idealClusters; i++) {
-                const centerIndex = Math.min(i * step, sortedPoints.length - 1);
-                initialCenters.push({
-                    longitude: sortedPoints[centerIndex].longitude,
-                    latitude: sortedPoints[centerIndex].latitude,
-                    points: []
-                });
+            // 3. تقسيم النقاط المرتبة إلى مجموعات متساوية
+            const clusters = [];
+            const groupAssignments = [];
+            
+            // حساب عدد النقاط في كل مجموعة (متساوية قدر الإمكان)
+            let baseGroupSize = Math.floor(sortedPoints.length / idealNumberOfGroups);
+            let remainder = sortedPoints.length % idealNumberOfGroups;
+            
+            // التأكد من أن المجموعات لا تقل عن الحد الأدنى
+            if (baseGroupSize < minGroupSize && idealNumberOfGroups > 1) {
+                baseGroupSize = minGroupSize;
+                // إعادة حساب عدد المجموعات
+                const newGroupCount = Math.min(
+                    idealNumberOfGroups,
+                    Math.floor(sortedPoints.length / baseGroupSize)
+                );
+                
+                baseGroupSize = Math.floor(sortedPoints.length / newGroupCount);
+                remainder = sortedPoints.length % newGroupCount;
             }
             
-            // تحويل نصف قطر التجميع من كيلومتر إلى درجات (تقريباً)
-            const maxRadiusDeg = maxRadiusKm / 111;
+            let startIndex = 0;
+            let groupNumber = 1;
             
-            // تعيين النقاط إلى أقرب مركز مع مراعاة القرب الجغرافي
-            const unassignedPoints = [...sortedPoints];
-            const clusters = new Array(idealClusters).fill().map(() => []);
-            const centers = [...initialCenters];
-            
-            // تكرار عملية التجميع لتحسين النتائج
-            for (let iteration = 0; iteration < 10; iteration++) {
-                // إعادة تهيئة المجموعات
-                clusters.forEach(cluster => cluster.length = 0);
+            for (let i = 0; i < idealNumberOfGroups; i++) {
+                // حساب حجم المجموعة الحالية
+                let groupSize = baseGroupSize;
+                if (i < remainder) {
+                    groupSize++;
+                }
                 
-                // تعيين النقاط إلى أقرب مركز مع مراعاة القرب الجغرافي
-                unassignedPoints.forEach(point => {
-                    let closestClusterIndex = -1;
-                    let minDistance = Infinity;
-                    
-                    // البحث عن أقرب مركز ضمن نطاق المسافة المسموح به
-                    for (let i = 0; i < centers.length; i++) {
-                        const center = centers[i];
-                        const distance = calculateGeographicDistance(
-                            point.longitude,
-                            point.latitude,
-                            center.longitude,
-                            center.latitude
-                        );
-                        
-                        // التحقق من أن المسافة ضمن النطاق المسموح به
-                        if (distance < minDistance && distance <= maxRadiusDeg) {
-                            minDistance = distance;
-                            closestClusterIndex = i;
-                        }
-                    }
-                    
-                    // إذا لم يتم العثور على مركز ضمن النطاق، نبحث عن أقرب مركز بدون قيود
-                    if (closestClusterIndex === -1) {
-                        for (let i = 0; i < centers.length; i++) {
-                            const center = centers[i];
-                            const distance = calculateGeographicDistance(
-                                point.longitude,
-                                point.latitude,
-                                center.longitude,
-                                center.latitude
-                            );
-                            
-                            if (distance < minDistance) {
-                                minDistance = distance;
-                                closestClusterIndex = i;
-                            }
-                        }
-                    }
-                    
-                    if (closestClusterIndex !== -1) {
-                        clusters[closestClusterIndex].push(point);
-                    }
-                });
-                
-                // تحديث مراكز المجموعات
-                let centersChanged = false;
-                for (let i = 0; i < clusters.length; i++) {
-                    if (clusters[i].length > 0) {
-                        const newCenter = calculateClusterCenter(clusters[i]);
-                        const oldCenter = centers[i];
-                        
-                        // التحقق مما إذا تغير المركز بشكل كبير
-                        const distanceChange = calculateGeographicDistance(
-                            oldCenter.longitude,
-                            oldCenter.latitude,
-                            newCenter.longitude,
-                            newCenter.latitude
-                        );
-                        
-                        if (distanceChange > 0.0001) { // تغير كبير بما يكفي
-                            centers[i] = {
-                                longitude: newCenter.longitude,
-                                latitude: newCenter.latitude,
-                                points: []
-                            };
-                            centersChanged = true;
-                        }
+                // التأكد من عدم وجود مجموعات صغيرة جداً (إلا المجموعة الأخيرة)
+                if (groupSize < minGroupSize && i < idealNumberOfGroups - 1) {
+                    // دمج المجموعة الصغيرة مع التالية
+                    if (i === idealNumberOfGroups - 2) {
+                        // قبل الأخيرة، ندمجها مع الأخيرة
+                        groupSize += baseGroupSize + (remainder > i ? 1 : 0);
+                        // تخطي المجموعة التالية
+                        remainder = 0;
+                    } else {
+                        // ندمج مع المجموعة التالية
+                        continue;
                     }
                 }
                 
-                // إذا لم تتغير المراكز بشكل كبير، نتوقف عن التكرار
-                if (!centersChanged) {
-                    break;
-                }
-            }
-            
-            // تقسيم المجموعات الكبيرة إلى مجموعات أصغر
-            const finalClusters = [];
-            for (const cluster of clusters) {
-                if (cluster.length === 0) continue;
+                const endIndex = Math.min(startIndex + groupSize, sortedPoints.length);
+                if (startIndex >= endIndex) break;
                 
-                if (cluster.length <= maxPointsPerCluster) {
-                    finalClusters.push(cluster);
-                } else {
-                    // تقسيم المجموعة الكبيرة بناءً على القرب الجغرافي
-                    const subClusters = splitClusterByProximity(cluster, maxPointsPerCluster, maxRadiusKm);
-                    subClusters.forEach(subCluster => {
-                        if (subCluster.length > 0) {
-                            finalClusters.push(subCluster);
-                        }
-                    });
-                }
-            }
-            
-            // تحقيق التوازن بين المجموعات
-            return balanceClusters(finalClusters, maxPointsPerCluster);
-        }
-
-        // تقسيم المجموعة بناءً على القرب الجغرافي
-        function splitClusterByProximity(cluster, maxPointsPerCluster, maxRadiusKm) {
-            if (cluster.length <= maxPointsPerCluster) {
-                return [cluster];
-            }
-            
-            const subClusters = [];
-            const sortedByLat = [...cluster].sort((a, b) => a.latitude - b.latitude);
-            
-            // استخدام خوارزمية تجميع بسيطة بناءً على خط العرض
-            let currentCluster = [];
-            let previousPoint = null;
-            
-            sortedByLat.forEach(point => {
-                if (currentCluster.length === 0) {
-                    currentCluster.push(point);
-                    previousPoint = point;
-                } else {
-                    // حساب المسافة من النقطة السابقة
-                    const distance = calculateGeographicDistance(
+                const clusterPoints = sortedPoints.slice(startIndex, endIndex);
+                
+                // حساب مركز المجموعة
+                const center = calculateClusterCenter(clusterPoints);
+                
+                // حساب إحصائيات المجموعة
+                let totalDistance = 0;
+                let maxDistance = 0;
+                
+                clusterPoints.forEach(point => {
+                    const distance = calculateDistanceInKm(
                         point.longitude,
                         point.latitude,
-                        previousPoint.longitude,
-                        previousPoint.latitude
+                        center.longitude,
+                        center.latitude
                     );
                     
-                    // تحويل المسافة إلى كيلومتر
-                    const distanceKm = distance * 111;
-                    
-                    // إذا كانت المسافة صغيرة أو المجموعة لم تصل للحد الأقصى
-                    if (distanceKm <= maxRadiusKm && currentCluster.length < maxPointsPerCluster) {
-                        currentCluster.push(point);
-                    } else {
-                        // إضافة المجموعة الحالية وبدء مجموعة جديدة
-                        subClusters.push([...currentCluster]);
-                        currentCluster = [point];
+                    totalDistance += distance;
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
                     }
-                    previousPoint = point;
-                }
+                    
+                    // تسجيل تعيين المجموعة للنقطة
+                    groupAssignments.push({
+                        counter: point.counter,
+                        longitude: point.longitude,
+                        latitude: point.latitude,
+                        group: groupNumber,
+                        groupSize: clusterPoints.length,
+                        distanceToCenter: distance
+                    });
+                });
+                
+                const avgDistance = totalDistance / clusterPoints.length;
+                
+                clusters.push({
+                    groupNumber: groupNumber,
+                    points: clusterPoints,
+                    center: center,
+                    stats: {
+                        pointCount: clusterPoints.length,
+                        avgDistance: parseFloat(avgDistance.toFixed(2)),
+                        maxDistance: parseFloat(maxDistance.toFixed(2)),
+                        density: parseFloat((clusterPoints.length / (Math.PI * Math.pow(maxDistance, 2))).toFixed(2))
+                    }
+                });
+                
+                startIndex = endIndex;
+                groupNumber++;
+            }
+            
+            // 4. تحسين التوزيع بناءً على القرب الجغرافي
+            clusters.forEach(cluster => {
+                const center = cluster.center;
+                
+                // ترتيب نقاط المجموعة حسب القرب من المركز
+                cluster.points.sort((a, b) => {
+                    const distA = calculateDistanceInKm(a.longitude, a.latitude, center.longitude, center.latitude);
+                    const distB = calculateDistanceInKm(b.longitude, b.latitude, center.longitude, center.latitude);
+                    return distA - distB;
+                });
             });
             
-            // إضافة المجموعة الأخيرة
-            if (currentCluster.length > 0) {
-                subClusters.push(currentCluster);
-            }
-            
-            return subClusters;
-        }
-
-        // تحقيق التوازن بين المجموعات
-        function balanceClusters(clusters, maxPointsPerCluster) {
-            if (clusters.length <= 1) return clusters;
-            
-            // حساب متوسط عدد النقاط في المجموعات
-            const totalPoints = clusters.reduce((sum, cluster) => sum + cluster.length, 0);
-            const avgPointsPerCluster = Math.ceil(totalPoints / clusters.length);
-            
-            // فرز المجموعات حسب حجمها
-            clusters.sort((a, b) => a.length - b.length);
-            
-            const balancedClusters = [...clusters];
-            let changesMade = true;
-            
-            // محاولة تحقيق التوازن
-            while (changesMade) {
-                changesMade = false;
+            // 5. ضبط المجموعات المتجاورة لتحسين التوزيع الجغرافي
+            for (let i = 0; i < clusters.length - 1; i++) {
+                const currentCluster = clusters[i];
+                const nextCluster = clusters[i + 1];
                 
-                for (let i = 0; i < balancedClusters.length - 1; i++) {
-                    const smallCluster = balancedClusters[i];
-                    const largeCluster = balancedClusters[balancedClusters.length - 1];
-                    
-                    // إذا كانت الفروق كبيرة جداً
-                    if (largeCluster.length - smallCluster.length > avgPointsPerCluster * 0.5) {
-                        // نقل بعض النقاط من المجموعة الكبيرة إلى الصغيرة
-                        const pointsToMove = Math.min(
-                            Math.floor((largeCluster.length - smallCluster.length) / 2),
-                            largeCluster.length - 1
-                        );
-                        
-                        // نقل النقاط الأقرب جغرافياً إلى المجموعة الصغيرة
-                        const smallClusterCenter = calculateClusterCenter(smallCluster);
-                        const sortedLargeCluster = [...largeCluster].sort((a, b) => {
-                            const distA = calculateGeographicDistance(
-                                a.longitude,
-                                a.latitude,
-                                smallClusterCenter.longitude,
-                                smallClusterCenter.latitude
-                            );
-                            const distB = calculateGeographicDistance(
-                                b.longitude,
-                                b.latitude,
-                                smallClusterCenter.longitude,
-                                smallClusterCenter.latitude
-                            );
-                            return distA - distB;
-                        });
-                        
-                        // نقل أقرب النقاط
-                        const pointsToTransfer = sortedLargeCluster.slice(0, pointsToMove);
-                        smallCluster.push(...pointsToTransfer);
-                        balancedClusters[balancedClusters.length - 1] = largeCluster.filter(
-                            point => !pointsToTransfer.includes(point)
-                        );
-                        
-                        changesMade = true;
-                        break;
-                    }
-                }
+                // حساب المسافة بين مراكز المجموعتين
+                const distanceBetweenClusters = calculateDistanceInKm(
+                    currentCluster.center.longitude,
+                    currentCluster.center.latitude,
+                    nextCluster.center.longitude,
+                    nextCluster.center.latitude
+                );
                 
-                // إعادة ترتيب المجموعات بعد كل تعديل
-                balancedClusters.sort((a, b) => a.length - b.length);
-            }
-            
-            // التأكد من عدم تجاوز أي مجموعة للحد الأقصى
-            const finalClusters = [];
-            for (const cluster of balancedClusters) {
-                if (cluster.length <= maxPointsPerCluster) {
-                    finalClusters.push(cluster);
-                } else {
-                    // إذا كانت المجموعة لا تزال كبيرة، نقسمها
-                    const maxSubClusters = Math.ceil(cluster.length / maxPointsPerCluster);
-                    const pointsPerSubCluster = Math.ceil(cluster.length / maxSubClusters);
+                // إذا كانت المجموعتان متقاربتين جداً، نعيد توزيع النقاط بينهما
+                if (distanceBetweenClusters < 0.5) { // أقل من 500 متر
+                    const allPoints = [...currentCluster.points, ...nextCluster.points];
                     
-                    const sortedCluster = [...cluster].sort((a, b) => a.latitude - b.latitude);
+                    // إعادة توزيع النقاط بالتساوي
+                    const newSize1 = Math.ceil(allPoints.length / 2);
+                    const newSize2 = allPoints.length - newSize1;
                     
-                    for (let i = 0; i < maxSubClusters; i++) {
-                        const start = i * pointsPerSubCluster;
-                        const end = Math.min(start + pointsPerSubCluster, sortedCluster.length);
-                        if (start < sortedCluster.length) {
-                            finalClusters.push(sortedCluster.slice(start, end));
-                        }
-                    }
+                    // تحديث المجموعتين
+                    currentCluster.points = allPoints.slice(0, newSize1);
+                    nextCluster.points = allPoints.slice(newSize1);
+                    
+                    // تحديث المراكز والإحصائيات
+                    currentCluster.center = calculateClusterCenter(currentCluster.points);
+                    nextCluster.center = calculateClusterCenter(nextCluster.points);
+                    
+                    // تحديث تعيينات المجموعات في groupAssignments
+                    updateGroupAssignments(groupAssignments, currentCluster, i + 1);
+                    updateGroupAssignments(groupAssignments, nextCluster, i + 2);
                 }
             }
             
-            return finalClusters;
-        }
-
-        // حساب مركز المجموعة
-        function calculateClusterCenter(points) {
-            if (points.length === 0) {
-                return { longitude: 0, latitude: 0 };
-            }
-            
-            const sumLon = points.reduce((sum, p) => sum + p.longitude, 0);
-            const sumLat = points.reduce((sum, p) => sum + p.latitude, 0);
+            // حساب إحصائيات نهائية
+            const stats = clusters.map(cluster => cluster.stats);
             
             return {
-                longitude: sumLon / points.length,
-                latitude: sumLat / points.length
+                clusters: clusters.map(c => c.points),
+                stats: stats,
+                groupAssignments: groupAssignments
             };
         }
 
-        // حساب المسافة الجغرافية بين نقطتين (بالدرجات)
-        function calculateGeographicDistance(lon1, lat1, lon2, lat2) {
-            const dx = lon1 - lon2;
-            const dy = lat1 - lat2;
-            return Math.sqrt(dx * dx + dy * dy);
+        function updateGroupAssignments(groupAssignments, cluster, groupNumber) {
+            cluster.points.forEach(point => {
+                const assignment = groupAssignments.find(a => 
+                    a.counter === point.counter && 
+                    a.longitude === point.longitude && 
+                    a.latitude === point.latitude
+                );
+                
+                if (assignment) {
+                    assignment.group = groupNumber;
+                    assignment.groupSize = cluster.points.length;
+                    assignment.distanceToCenter = calculateDistanceInKm(
+                        point.longitude,
+                        point.latitude,
+                        cluster.center.longitude,
+                        cluster.center.latitude
+                    );
+                }
+            });
         }
 
         // حساب المسافة بالكيلومترات
@@ -1852,51 +1787,19 @@
             return R * c;
         }
 
-        // حساب إحصائيات المجموعات
-        function calculateClusterStats(clusters) {
-            return clusters.map((cluster, index) => {
-                if (cluster.length === 0) {
-                    return {
-                        clusterId: index + 1,
-                        pointCount: 0,
-                        avgDistance: 0,
-                        maxDistance: 0,
-                        density: 0
-                    };
-                }
-                
-                const center = calculateClusterCenter(cluster);
-                let totalDistance = 0;
-                let maxDistance = 0;
-                
-                cluster.forEach(point => {
-                    const distance = calculateDistanceInKm(
-                        point.longitude,
-                        point.latitude,
-                        center.longitude,
-                        center.latitude
-                    );
-                    totalDistance += distance;
-                    if (distance > maxDistance) {
-                        maxDistance = distance;
-                    }
-                });
-                
-                const avgDistance = totalDistance / cluster.length;
-                
-                // حساب الكثافة (عدد النقاط لكل كيلومتر مربع)
-                // تقدير المساحة بناءً على المسافة القصوى
-                const area = Math.PI * Math.pow(maxDistance, 2);
-                const density = area > 0 ? cluster.length / area : cluster.length;
-                
-                return {
-                    clusterId: index + 1,
-                    pointCount: cluster.length,
-                    avgDistance: parseFloat(avgDistance.toFixed(2)),
-                    maxDistance: parseFloat(maxDistance.toFixed(2)),
-                    density: parseFloat(density.toFixed(2))
-                };
-            });
+        // حساب مركز المجموعة
+        function calculateClusterCenter(points) {
+            if (points.length === 0) {
+                return { longitude: 0, latitude: 0 };
+            }
+            
+            const sumLon = points.reduce((sum, p) => sum + p.longitude, 0);
+            const sumLat = points.reduce((sum, p) => sum + p.latitude, 0);
+            
+            return {
+                longitude: sumLon / points.length,
+                latitude: sumLat / points.length
+            };
         }
 
         // ============================================
@@ -1922,22 +1825,30 @@
                 const group = item.group || 0;
                 const groupSize = item.groupSize || 0;
                 const distance = item.distanceToCenter || 0;
+                const polygonName = item.polygon || "غير مرتبط";
                 
                 const groupColor = group > 0 ? groupColors[(group - 1) % groupColors.length] : '#ccc';
                 
-                if (group > 0 && item.polygon !== "غير مرتبط") {
-                    if (!groupCounts[item.polygon]) {
-                        groupCounts[item.polygon] = new Set();
+                if (group > 0) {
+                    if (!groupCounts[polygonName]) {
+                        groupCounts[polygonName] = new Set();
                     }
-                    groupCounts[item.polygon].add(group);
+                    groupCounts[polygonName].add(group);
                 }
+                
+                // إنشاء النص المدمج: رقم المجموعة مع اسم المضلع
+                const groupPolygonCombo = item.groupPolygonCombo || 
+                    (group > 0 ? `${group}_${polygonName}` : '-');
                 
                 row.innerHTML = `
                     <td>${item.counter}</td>
                     <td>${item.longitude.toFixed(6)}</td>
                     <td>${item.latitude.toFixed(6)}</td>
-                    <td style="color: ${item.polygon === "غير مرتبط" ? '#e74c3c' : '#27ae60'}; font-weight: bold;">
-                        ${item.polygon}
+                    <td style="color: ${polygonName === "غير مرتبط" ? '#e74c3c' : '#27ae60'}; font-weight: bold;">
+                        ${groupPolygonCombo}
+                    </td>
+                    <td style="color: ${polygonName === "غير مرتبط" ? '#e74c3c' : '#2c3e50'};">
+                        ${polygonName}
                     </td>
                     <td>
                         ${group > 0 ? `<span class="group-badge" style="background-color: ${groupColor};">${group}</span>` : '-'}
@@ -1948,8 +1859,9 @@
                 tbody.appendChild(row);
             });
             
+            // حساب إجمالي المجموعات
             for (const polygon in polygonGroups) {
-                totalGroups += polygonGroups[polygon].totalClusters;
+                totalGroups += polygonGroups[polygon].totalGroups;
             }
             
             const linkedCount = processedData.filter(item => item.polygon !== "غير مرتبط").length;
@@ -2006,6 +1918,8 @@
             
             for (const polygonName in polygonGroups) {
                 const stats = polygonGroups[polygonName];
+                const pointsPerGroup = parseInt(document.getElementById('points-per-group').value) || 20;
+                
                 html += `
                     <div class="polygon-group-item">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -2014,23 +1928,27 @@
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                ${Array.from({length: stats.totalClusters}, (_, i) => 
-                                    `<span class="group-badge" style="background-color: ${groupColors[i % groupColors.length]}">${i + 1}</span>`
-                                ).join('')}
+                                ${Array.from({length: stats.totalGroups}, (_, i) => {
+                                    const groupSize = stats.clusters[i] ? stats.clusters[i].length : 0;
+                                    const colorClass = groupSize < pointsPerGroup ? 'style="background-color: #f39c12"' : 
+                                                     `style="background-color: ${groupColors[i % groupColors.length]}"`;
+                                    return `<span class="group-badge" ${colorClass}>${i + 1}</span>`;
+                                }).join('')}
                             </div>
-                            <span style="color: #666; font-size: 0.9rem;">${stats.totalClusters} مجموعة</span>
+                            <span style="color: #666; font-size: 0.9rem;">${stats.totalGroups} مجموعة</span>
                         </div>
                         <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">
                             ${stats.clusters.map((cluster, idx) => {
-                                const clusterStat = stats.clusterStats ? stats.clusterStats[idx] : null;
+                                const clusterStat = stats.distributionStats ? stats.distributionStats[idx] : null;
+                                const sizeInfo = cluster ? `: ${cluster.length} نقطة` : '';
                                 const distanceInfo = clusterStat ? 
                                     ` | متوسط المسافة: ${clusterStat.avgDistance} كم` : '';
-                                return `المجموعة ${idx + 1}: ${cluster.length} نقطة${distanceInfo}`;
+                                return `المجموعة ${idx + 1}${sizeInfo}${distanceInfo}`;
                             }).join(' | ')}
                         </div>
                         <div class="cluster-details">
                             <i class="fas fa-info-circle"></i> 
-                            تم تجميع النقاط القريبة جغرافياً في نفس المجموعة مع تحقيق توازن في العدد
+                            تم التوزيع جغرافياً من الجنوب إلى الشمال مع تحقيق توازن في عدد النقاط
                         </div>
                     </div>
                 `;
@@ -2061,7 +1979,7 @@
             setTimeout(() => {
                 try {
                     const worksheetData = [
-                        ["رقم العداد", "الإحداثي الطولي", "الإحداثي العرضي", "اسم المضلع", "المجموعة", "عدد النقاط في المجموعة", "المسافة إلى المركز (كم)", "حالة الربط"]
+                        ["رقم العداد", "الإحداثي الطولي", "الإحداثي العرضي", "المجموعة مع المضلع", "اسم المضلع", "رقم المجموعة", "عدد النقاط في المجموعة", "المسافة إلى المركز (كم)", "حالة الربط"]
                     ];
                     
                     const batchSize = 50000;
@@ -2075,6 +1993,7 @@
                                 item.counter,
                                 item.longitude,
                                 item.latitude,
+                                item.groupPolygonCombo || (item.group ? `${item.group}_${item.polygon}` : ''),
                                 item.polygon,
                                 item.group || '',
                                 item.groupSize || '',
@@ -2114,33 +2033,31 @@
                 
                 // إضافة ورقة الإحصائيات
                 const statsWorksheetData = [
-                    ["إحصائيات المعالجة"],
+                    ["إحصائيات التوزيع الجغرافي"],
                     [],
                     ["إجمالي النقاط", processedData.length],
                     ["النقاط المرتبطة", processedData.filter(item => item.polygon !== "غير مرتبط").length],
                     ["النقاط غير المرتبطة", processedData.filter(item => item.polygon === "غير مرتبط").length],
-                    ["إجمالي المجموعات", Object.keys(polygonGroups).reduce((sum, name) => sum + polygonGroups[name].totalClusters, 0)],
+                    ["إجمالي المجموعات", Object.keys(polygonGroups).reduce((sum, name) => sum + polygonGroups[name].totalGroups, 0)],
+                    ["عدد النقاط في كل مجموعة", parseInt(document.getElementById('points-per-group').value) || 20],
+                    ["الحد الأدنى للمجموعة", parseInt(document.getElementById('min-group-size').value) || 15],
                     [],
                     ["توزيع المجموعات حسب المضلع"]
                 ];
                 
                 for (const polygonName in polygonGroups) {
                     const stats = polygonGroups[polygonName];
-                    statsWorksheetData.push([polygonName, `${stats.totalPoints} نقطة`, `${stats.totalClusters} مجموعة`]);
+                    statsWorksheetData.push([polygonName, `${stats.totalPoints} نقطة`, `${stats.totalGroups} مجموعة`]);
                     
-                    if (stats.clusterStats) {
-                        stats.clusterStats.forEach((clusterStat, idx) => {
+                    if (stats.distributionStats) {
+                        stats.distributionStats.forEach((clusterStat, idx) => {
+                            const cluster = stats.clusters[idx];
                             statsWorksheetData.push([
-                                `  المجموعة ${clusterStat.clusterId}`,
-                                `${clusterStat.pointCount} نقطة`,
+                                `  المجموعة ${idx + 1}`,
+                                `${cluster ? cluster.length : 0} نقطة`,
                                 `متوسط المسافة: ${clusterStat.avgDistance} كم`,
-                                `أقصى مسافة: ${clusterStat.maxDistance} كم`,
-                                `الكثافة: ${clusterStat.density} نقطة/كم²`
+                                `أقصى مسافة: ${clusterStat.maxDistance} كم`
                             ]);
-                        });
-                    } else {
-                        stats.clusters.forEach((cluster, idx) => {
-                            statsWorksheetData.push([`  المجموعة ${idx + 1}`, `${cluster.length} نقطة`, '', '', '']);
                         });
                     }
                 }
@@ -2159,7 +2076,7 @@
                 });
                 
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
-                saveAs(blob, `النتائج_المعالجة_${timestamp}.xlsx`);
+                saveAs(blob, `التوزيع_الجغرافي_${timestamp}.xlsx`);
                 
                 hideLoading();
                 showMessage(`✅ تم تحميل الملف بنجاح (${processedData.length.toLocaleString()} نقطة)`, 'success');
