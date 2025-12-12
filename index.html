@@ -623,6 +623,13 @@
             margin-top: 40px;
             padding: 20px;
         }
+        
+        /* إحصائيات إضافية */
+        .cluster-details {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -630,7 +637,7 @@
         <!-- شريط العنوان -->
         <header class="header">
             <h1><i class="fas fa-map-marked-alt"></i> نظام معالجة البيانات الجغرافية</h1>
-            <p>ربط نقاط الإحداثيات بالمضللات الجغرافية وتقسيمها إلى مجموعات</p>
+            <p>ربط نقاط الإحداثيات بالمضللات الجغرافية وتقسيمها إلى مجموعات جغرافية متقاربة</p>
         </header>
 
         <div class="main-content">
@@ -666,7 +673,7 @@
                 
                 <!-- قسم التجميع -->
                 <div class="clustering-section">
-                    <h3><i class="fas fa-object-group"></i> إعدادات التقسيم إلى مجموعات</h3>
+                    <h3><i class="fas fa-object-group"></i> إعدادات التقسيم إلى مجموعات جغرافية</h3>
                     <div class="clustering-controls">
                         <label>
                             <span>عدد المجموعات لكل مضلع:</span>
@@ -674,11 +681,15 @@
                         </label>
                         <label>
                             <span>أقصى نقاط لكل مجموعة:</span>
-                            <input type="number" id="max-points-per-cluster" min="1" max="500" value="50">
+                            <input type="number" id="max-points-per-cluster" min="1" max="500" value="20">
+                        </label>
+                        <label>
+                            <span>نطاق التجميع (بالكيلومتر):</span>
+                            <input type="number" id="cluster-radius" min="0.1" max="50" step="0.1" value="1.0">
                         </label>
                     </div>
                     <div class="clustering-summary" id="clustering-summary">
-                        <i class="fas fa-info-circle"></i> سيتم تقسيم النقاط داخل كل مضلع إلى مجموعات بناءً على القرب الجغرافي وترتيبها من الجنوب إلى الشمال
+                        <i class="fas fa-info-circle"></i> سيتم تجميع النقاط القريبة جغرافياً في نفس المجموعة مع تحقيق توازن في عدد النقاط
                     </div>
                 </div>
                 
@@ -729,7 +740,7 @@
                 
                 <!-- إحصائيات المجموعات -->
                 <div class="polygon-groups" id="polygon-groups-summary">
-                    <h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>
+                    <h3><i class="fas fa-layer-group"></i> توزيع المجموعات الجغرافية</h3>
                     <!-- سيتم ملؤها ديناميكياً -->
                 </div>
                 
@@ -754,6 +765,7 @@
                                 <th>اسم المضلع</th>
                                 <th>المجموعة</th>
                                 <th>عدد النقاط في المجموعة</th>
+                                <th>المسافة إلى المركز (كم)</th>
                             </tr>
                         </thead>
                         <tbody id="results-body">
@@ -786,8 +798,8 @@
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <h3>التقسيم إلى مجموعات</h3>
-                    <p>يتم تقسيم النقاط داخل كل مضلع إلى مجموعات بناءً على القرب الجغرافي وترتيبها من الجنوب إلى الشمال</p>
+                    <h3>التجميع الجغرافي</h3>
+                    <p>يتم تجميع النقاط القريبة جغرافياً في نفس المجموعة مع تحقيق توازن في عدد النقاط بين المجموعات</p>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
@@ -831,7 +843,8 @@
         let excelData = [];
         let polygonsData = [];
         let polygonGroups = {};
-        let polygonBounds = {}; // لتخزين حدود كل مضلع لتحسين الأداء
+        let polygonBounds = {};
+        let clusterCenters = {}; // مراكز المجموعات
         
         // ألوان للمجموعات
         let groupColors = [
@@ -850,7 +863,6 @@
         // دوال التعامل مع الملفات
         // ============================================
 
-        // إضافة مستمعين لأحداث تغيير الملفات
         document.getElementById('excel-file').addEventListener('change', function(e) {
             handleFileUpload(e.target.files[0], 'excel');
         });
@@ -859,11 +871,9 @@
             handleFileUpload(e.target.files[0], 'kmz');
         });
 
-        // دالة معالجة رفع الملفات
         function handleFileUpload(file, type) {
             if (!file) return;
             
-            // التحقق من نوع الملف
             const validExtensions = {
                 excel: ['.xlsx', '.xls', '.csv'],
                 kmz: ['.kmz', '.kml']
@@ -876,20 +886,15 @@
                 return;
             }
             
-            // التحقق من حجم الملف
             const maxSize = type === 'excel' ? 50 : 100;
             if (file.size > maxSize * 1024 * 1024) {
                 showMessage(`حجم الملف كبير جداً. الحد الأقصى ${maxSize}MB`, 'error');
                 return;
             }
             
-            // حفظ الملف
             uploadedFiles[type] = file;
-            
-            // عرض الملف في القائمة
             displayFileInList(file, type);
             
-            // قراءة الملف حسب نوعه
             if (type === 'excel') {
                 readExcelFile(file);
             } else {
@@ -899,7 +904,6 @@
             showMessage(`تم رفع ${type === 'excel' ? 'ملف Excel' : 'ملف KMZ'} بنجاح`, 'success');
         }
 
-        // عرض الملف في القائمة
         function displayFileInList(file, type) {
             const fileList = document.getElementById('file-list');
             const fileId = `${type}-${Date.now()}`;
@@ -926,7 +930,6 @@
             fileList.appendChild(fileItem);
         }
 
-        // إزالة ملف من القائمة
         function removeFile(fileId, type) {
             const fileElement = document.getElementById(fileId);
             if (fileElement) {
@@ -950,7 +953,6 @@
         // قراءة ملفات Excel
         // ============================================
 
-        // قراءة ملف Excel
         function readExcelFile(file) {
             showLoading('جاري قراءة ملف Excel...');
             
@@ -960,9 +962,7 @@
                 try {
                     let jsonData;
                     
-                    // التحقق من نوع الملف
                     if (file.name.toLowerCase().endsWith('.csv')) {
-                        // معالجة ملف CSV
                         const csvText = e.target.result;
                         const lines = csvText.split('\n');
                         const headers = lines[0].split(',').map(h => h.trim());
@@ -978,13 +978,10 @@
                             jsonData.push(row);
                         }
                     } else {
-                        // معالجة ملف Excel
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
-                        
                         const firstSheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[firstSheetName];
-                        
                         jsonData = XLSX.utils.sheet_to_json(worksheet);
                     }
                     
@@ -994,10 +991,7 @@
                         return;
                     }
                     
-                    // استخراج البيانات
                     excelData = extractExcelData(jsonData);
-                    
-                    // عرض عينة من البيانات
                     displaySampleData(excelData.slice(0, 5));
                     
                     hideLoading();
@@ -1022,14 +1016,12 @@
             }
         }
 
-        // استخراج البيانات من Excel
         function extractExcelData(jsonData) {
             if (!jsonData || jsonData.length === 0) return [];
             
             const firstRow = jsonData[0];
             const columns = Object.keys(firstRow);
             
-            // البحث عن أسماء الأعمدة المحتملة
             const counterCol = findColumn(columns, [
                 'Counter_Number', 'Counter_No', 'Counter', 'رقم العداد', 'العداد', 
                 'meter_number', 'meter_no', 'METER_NUM', 'meter_num', 'عداد', 'رقم',
@@ -1051,7 +1043,6 @@
                 return [];
             }
             
-            // استخراج البيانات
             const extractedData = [];
             let errorCount = 0;
             
@@ -1089,7 +1080,6 @@
             return extractedData;
         }
 
-        // البحث عن عمود في المصفوفة
         function findColumn(columns, possibleNames) {
             const lowerColumns = columns.map(col => col.toString().toLowerCase().trim());
             
@@ -1107,7 +1097,6 @@
         // قراءة ملفات KMZ/KML
         // ============================================
 
-        // قراءة ملف KMZ/KML
         async function readKMZFile(file) {
             try {
                 showLoading('جاري قراءة ملف KMZ...');
@@ -1115,13 +1104,11 @@
                 let geojson;
                 
                 if (file.name.toLowerCase().endsWith('.kml')) {
-                    // قراءة ملف KML مباشرة
                     const kmlText = await file.text();
                     const parser = new DOMParser();
                     const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
                     geojson = toGeoJSON.kml(kmlDoc);
                 } else {
-                    // استخراج KML من KMZ
                     const zip = new JSZip();
                     const zipData = await zip.loadAsync(file);
                     
@@ -1140,20 +1127,15 @@
                     const kmlText = await kmlFile.async('text');
                     const parser = new DOMParser();
                     const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
-                    
                     geojson = toGeoJSON.kml(kmlDoc);
                 }
                 
-                // استخراج المضللات من GeoJSON
                 polygonsData = extractPolygonsFromGeoJSON(geojson);
-                
-                // حساب حدود كل مضلع لتحسين الأداء
                 calculatePolygonBounds();
                 
                 hideLoading();
                 showMessage(`تم استخراج ${polygonsData.length} مضلع من ملف KMZ`, 'success');
                 
-                // عرض معلومات المضللات
                 document.getElementById('polygon-count').textContent = polygonsData.length;
                 document.getElementById('polygon-info').style.display = 'block';
                 
@@ -1164,7 +1146,6 @@
             }
         }
 
-        // حساب حدود كل مضلع لتحسين الأداء
         function calculatePolygonBounds() {
             polygonBounds = {};
             
@@ -1176,7 +1157,6 @@
                     maxLat: -Infinity
                 };
                 
-                // حساب الحدود الدنيا والعليا للمضلع
                 polygon.coordinates.forEach(coord => {
                     const lon = coord[0];
                     const lat = coord[1];
@@ -1191,7 +1171,6 @@
             });
         }
 
-        // استخراج المضللات من GeoJSON
         function extractPolygonsFromGeoJSON(geojson) {
             const polygons = [];
             
@@ -1213,7 +1192,6 @@
                         properties: feature.properties || {}
                     });
                 } else if (feature.geometry && feature.geometry.type === 'MultiPolygon') {
-                    // معالجة MultiPolygon
                     feature.geometry.coordinates.forEach((polygonCoords, index) => {
                         const polygonName = feature.properties?.name || 
                                           feature.properties?.Name || 
@@ -1236,7 +1214,6 @@
         // عرض البيانات
         // ============================================
 
-        // عرض عينة من البيانات
         function displaySampleData(sampleData) {
             const tbody = document.getElementById('results-body');
             tbody.innerHTML = '';
@@ -1244,7 +1221,7 @@
             if (sampleData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
                             <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
                             لم يتم تحميل أي بيانات بعد
                         </td>
@@ -1262,11 +1239,11 @@
                     <td style="color: #f39c12;">لم تتم المعالجة بعد</td>
                     <td>-</td>
                     <td>-</td>
+                    <td>-</td>
                 `;
                 tbody.appendChild(row);
             });
             
-            // تحديث الإحصائيات
             updateStats({
                 total: sampleData.length,
                 linked: 0,
@@ -1274,16 +1251,14 @@
                 totalGroups: 0
             });
             
-            // إخفاء عناصر التحكم في الصفحات
             document.getElementById('pagination-controls').style.display = 'none';
         }
 
-        // مسح جدول النتائج
         function clearResultsTable() {
             const tbody = document.getElementById('results-body');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
                         <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
                         لم يتم تحميل أي بيانات بعد
                     </td>
@@ -1293,13 +1268,11 @@
             updateStats({ total: 0, linked: 0, unlinked: 0, totalGroups: 0 });
             document.getElementById('download-btn').disabled = true;
             
-            // مسح إحصائيات المجموعات
             document.getElementById('polygon-groups-summary').innerHTML = `
-                <h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>
+                <h3><i class="fas fa-layer-group"></i> توزيع المجموعات الجغرافية</h3>
                 <p style="color: #666; text-align: center;">لا توجد بيانات للعرض</p>
             `;
             
-            // إخفاء عناصر التحكم في الصفحات
             document.getElementById('pagination-controls').style.display = 'none';
         }
 
@@ -1307,54 +1280,51 @@
         // البيانات النموذجية
         // ============================================
 
-        // تحميل البيانات النموذجية
         function loadSampleData() {
             showLoading('جاري تحميل البيانات النموذجية...');
             
             setTimeout(() => {
-                // بيانات نموذجية
+                // بيانات نموذجية متقاربة جغرافياً
                 const sampleExcelData = [
-                    { counter: 84995769, longitude: 41.597424, latitude: 27.422577 },
-                    { counter: 82384325, longitude: 42.935330, latitude: 28.256882 },
-                    { counter: 65445382, longitude: 41.675612, latitude: 27.522625 },
-                    { counter: 65382907, longitude: 41.749193, latitude: 27.549664 },
-                    { counter: 71037601, longitude: 42.933397, latitude: 28.260661 },
-                    { counter: 61211589, longitude: 41.643443, latitude: 27.527097 },
-                    { counter: 63952433, longitude: 41.652373, latitude: 27.468442 },
-                    { counter: 10227804, longitude: 41.731682, latitude: 27.567220 },
+                    // مجموعة 1 - نقاط متقاربة جداً
+                    { counter: 1001, longitude: 41.597424, latitude: 27.422577 },
+                    { counter: 1002, longitude: 41.597524, latitude: 27.422677 },
+                    { counter: 1003, longitude: 41.597624, latitude: 27.422777 },
+                    { counter: 1004, longitude: 41.597724, latitude: 27.422877 },
+                    { counter: 1005, longitude: 41.597824, latitude: 27.422977 },
+                    
+                    // مجموعة 2 - نقاط متقاربة
+                    { counter: 1006, longitude: 41.598424, latitude: 27.423577 },
+                    { counter: 1007, longitude: 41.598524, latitude: 27.423677 },
+                    { counter: 1008, longitude: 41.598624, latitude: 27.423777 },
+                    { counter: 1009, longitude: 41.598724, latitude: 27.423877 },
+                    { counter: 1010, longitude: 41.598824, latitude: 27.423977 },
+                    
+                    // مجموعة 3 - نقاط متقاربة
+                    { counter: 1011, longitude: 41.599424, latitude: 27.424577 },
+                    { counter: 1012, longitude: 41.599524, latitude: 27.424677 },
+                    { counter: 1013, longitude: 41.599624, latitude: 27.424777 },
+                    { counter: 1014, longitude: 41.599724, latitude: 27.424877 },
+                    { counter: 1015, longitude: 41.599824, latitude: 27.424977 },
                 ];
                 
-                // حفظ البيانات
                 excelData = sampleExcelData;
                 
-                // إنشاء مضللات نموذجية
                 polygonsData = [
                     {
-                        name: "مضلع المنطقة الشرقية",
+                        name: "مضلع المنطقة المركزية",
                         coordinates: [
-                            [41.5, 27.4],
-                            [41.8, 27.4],
-                            [41.8, 27.6],
-                            [41.5, 27.6],
-                            [41.5, 27.4]
+                            [41.596, 27.421],
+                            [41.601, 27.421],
+                            [41.601, 27.426],
+                            [41.596, 27.426],
+                            [41.596, 27.421]
                         ]
-                    },
-                    {
-                        name: "مضلع المنطقة الشمالية",
-                        coordinates: [
-                            [42.8, 28.2],
-                            [43.0, 28.2],
-                            [43.0, 28.3],
-                            [42.8, 28.3],
-                            [42.8, 28.2]
-                        ]
-                    },
+                    }
                 ];
                 
-                // حساب حدود المضللات
                 calculatePolygonBounds();
                 
-                // عرض الملفات في القائمة
                 const fileList = document.getElementById('file-list');
                 fileList.innerHTML = `
                     <div class="file-item">
@@ -1377,10 +1347,8 @@
                     </div>
                 `;
                 
-                // عرض البيانات
                 displaySampleData(excelData);
                 
-                // عرض معلومات المضللات
                 document.getElementById('polygon-count').textContent = polygonsData.length;
                 document.getElementById('polygon-info').style.display = 'block';
                 
@@ -1394,7 +1362,6 @@
         // معالجة البيانات
         // ============================================
 
-        // معالجة البيانات
         function processData() {
             if (excelData.length === 0) {
                 showMessage('❌ لا توجد بيانات للمعالجة. يرجى رفع ملف Excel أولاً', 'error');
@@ -1412,7 +1379,6 @@
             }, 100);
         }
 
-        // معالجة البيانات في دفعات
         function processDataInBatches() {
             const batchSize = 1000;
             const totalBatches = Math.ceil(excelData.length / batchSize);
@@ -1424,11 +1390,9 @@
                 const end = Math.min(start + batchSize, excelData.length);
                 const batchData = excelData.slice(start, end);
                 
-                // معالجة دفعة البيانات
                 batchData.forEach(item => {
                     let polygonName = "غير مرتبط";
                     
-                    // التحقق مما إذا كانت النقطة داخل أي مضلع
                     if (polygonsData.length > 0) {
                         polygonName = findPolygonForPoint(item.longitude, item.latitude);
                     }
@@ -1441,14 +1405,12 @@
                 
                 currentBatch++;
                 
-                // تحديث شريط التقدم
                 const progressPercent = Math.round((currentBatch / totalBatches) * 100);
                 document.getElementById('detailed-progress').style.width = `${progressPercent}%`;
                 document.getElementById('progress-percentage').textContent = `${progressPercent}%`;
                 document.getElementById('processing-info').textContent = 
                     `تم معالجة ${currentBatch * batchSize} من ${excelData.length} نقطة`;
                 
-                // إذا كانت هناك دفعات أخرى، نستمر
                 if (currentBatch < totalBatches) {
                     setTimeout(processBatch, 10);
                 } else {
@@ -1459,20 +1421,16 @@
             processBatch();
         }
 
-        // العثور على المضلع المناسب للنقطة
         function findPolygonForPoint(longitude, latitude) {
             let polygonName = "غير مرتبط";
             
-            // البحث في جميع المضللات
             for (const polygon of polygonsData) {
                 const bounds = polygonBounds[polygon.name];
                 
-                // التحقق السريع من حدود المضلع أولاً
                 if (bounds && 
                     longitude >= bounds.minLon && longitude <= bounds.maxLon &&
                     latitude >= bounds.minLat && latitude <= bounds.maxLat) {
                     
-                    // إذا كانت النقطة ضمن حدود المضلع، تحقق بدقة
                     if (pointInPolygon(longitude, latitude, polygon.coordinates)) {
                         polygonName = polygon.name;
                         break;
@@ -1483,7 +1441,6 @@
             return polygonName;
         }
 
-        // التحقق مما إذا كانت النقطة داخل المضلع
         function pointInPolygon(longitude, latitude, polygon) {
             let inside = false;
             const x = longitude;
@@ -1502,13 +1459,18 @@
             return inside;
         }
 
-        // إكمال المعالجة
+        // ============================================
+        // خوارزمية تجميع جغرافية محسنة
+        // ============================================
+
         function completeProcessing() {
             polygonGroups = {};
-            const clustersPerPolygon = parseInt(document.getElementById('clusters-per-polygon').value) || 3;
-            const maxPointsPerCluster = parseInt(document.getElementById('max-points-per-cluster').value) || 50;
+            clusterCenters = {};
             
-            // تجميع النقاط حسب المضلع
+            const clustersPerPolygon = parseInt(document.getElementById('clusters-per-polygon').value) || 3;
+            const maxPointsPerCluster = parseInt(document.getElementById('max-points-per-cluster').value) || 20;
+            const clusterRadiusKm = parseFloat(document.getElementById('cluster-radius').value) || 1.0;
+            
             const pointsByPolygon = {};
             processedData.forEach(item => {
                 if (item.polygon !== "غير مرتبط") {
@@ -1519,100 +1481,206 @@
                 }
             });
             
-            // تطبيق التجميع على كل مضلع
             for (const polygonName in pointsByPolygon) {
                 const points = pointsByPolygon[polygonName];
                 
-                // ترتيب النقاط من الجنوب إلى الشمال
-                points.sort((a, b) => a.latitude - b.latitude);
+                if (points.length === 0) continue;
                 
-                // تطبيق خوارزمية التجميع
-                const clusters = smartClusterPoints(points, clustersPerPolygon, maxPointsPerCluster);
+                // تطبيق خوارزمية التجميع الجغرافي المتقدم
+                const clusters = advancedGeographicClustering(
+                    points, 
+                    clustersPerPolygon, 
+                    maxPointsPerCluster, 
+                    clusterRadiusKm
+                );
                 
-                // ترتيب المجموعات من الجنوب إلى الشمال
-                const clustersWithStats = clusters.map((cluster, index) => {
-                    const avgLat = cluster.reduce((sum, p) => sum + p.latitude, 0) / cluster.length;
-                    return {
-                        cluster,
-                        avgLat,
-                        index: index + 1
-                    };
+                // تخزين مراكز المجموعات
+                const centers = [];
+                clusters.forEach((cluster, index) => {
+                    if (cluster.length > 0) {
+                        const center = calculateClusterCenter(cluster);
+                        centers.push({
+                            clusterId: index + 1,
+                            longitude: center.longitude,
+                            latitude: center.latitude,
+                            pointsCount: cluster.length
+                        });
+                        
+                        cluster.forEach(point => {
+                            point.group = index + 1;
+                            point.groupSize = cluster.length;
+                            point.distanceToCenter = calculateDistanceInKm(
+                                point.longitude,
+                                point.latitude,
+                                center.longitude,
+                                center.latitude
+                            );
+                        });
+                    }
                 });
                 
-                clustersWithStats.sort((a, b) => a.avgLat - b.avgLat);
-                
-                // تعيين رقم المجموعة لكل نقطة
-                clustersWithStats.forEach((clusterData, clusterIndex) => {
-                    clusterData.cluster.forEach(point => {
-                        point.group = clusterIndex + 1;
-                        point.groupSize = clusterData.cluster.length;
-                    });
-                });
-                
+                clusterCenters[polygonName] = centers;
                 polygonGroups[polygonName] = {
                     totalPoints: points.length,
                     totalClusters: clusters.length,
-                    clusters: clustersWithStats.map(c => c.cluster)
+                    clusters: clusters,
+                    clusterStats: calculateClusterStats(clusters)
                 };
             }
             
-            // عرض النتائج
             displayResultsPage(1);
-            
-            // عرض إحصائيات المجموعات
             displayPolygonGroupsSummary();
-            
-            // تمكين زر التحميل
             document.getElementById('download-btn').disabled = false;
             
             hideLoading();
             showMessage(`✅ تمت معالجة ${processedData.length} نقطة بنجاح`, 'success');
         }
 
-        // خوارزمية تجميع ذكية
-        function smartClusterPoints(points, targetClusters, maxPointsPerCluster) {
+        // خوارزمية تجميع جغرافية متقدمة
+        function advancedGeographicClustering(points, targetClusters, maxPointsPerCluster, maxRadiusKm) {
             if (points.length === 0) return [];
             
+            // إذا كان عدد النقاط أقل من الحد الأقصى للمجموعة الواحدة
             if (points.length <= maxPointsPerCluster) {
                 return [points];
             }
             
+            // حساب عدد المجموعات بناءً على عدد النقاط والحد الأقصى
             const idealClusters = Math.min(
                 targetClusters,
                 Math.ceil(points.length / maxPointsPerCluster)
             );
             
-            const clusters = [];
+            // ترتيب النقاط من الجنوب إلى الشمال
+            const sortedPoints = [...points].sort((a, b) => a.latitude - b.latitude);
             
-            if (points.length > 0) {
-                const sortedByLat = [...points];
-                const pointsPerCluster = Math.ceil(sortedByLat.length / idealClusters);
+            // تحديد مراكز أولية للمجموعات
+            const initialCenters = [];
+            const step = Math.floor(sortedPoints.length / idealClusters);
+            
+            for (let i = 0; i < idealClusters; i++) {
+                const centerIndex = Math.min(i * step, sortedPoints.length - 1);
+                initialCenters.push({
+                    longitude: sortedPoints[centerIndex].longitude,
+                    latitude: sortedPoints[centerIndex].latitude,
+                    points: []
+                });
+            }
+            
+            // تحويل نصف قطر التجميع من كيلومتر إلى درجات (تقريباً)
+            const maxRadiusDeg = maxRadiusKm / 111;
+            
+            // تعيين النقاط إلى أقرب مركز مع مراعاة القرب الجغرافي
+            const unassignedPoints = [...sortedPoints];
+            const clusters = new Array(idealClusters).fill().map(() => []);
+            const centers = [...initialCenters];
+            
+            // تكرار عملية التجميع لتحسين النتائج
+            for (let iteration = 0; iteration < 10; iteration++) {
+                // إعادة تهيئة المجموعات
+                clusters.forEach(cluster => cluster.length = 0);
                 
-                for (let i = 0; i < idealClusters; i++) {
-                    const startIdx = i * pointsPerCluster;
-                    const endIdx = Math.min(startIdx + pointsPerCluster, sortedByLat.length);
+                // تعيين النقاط إلى أقرب مركز مع مراعاة القرب الجغرافي
+                unassignedPoints.forEach(point => {
+                    let closestClusterIndex = -1;
+                    let minDistance = Infinity;
                     
-                    if (startIdx < sortedByLat.length) {
-                        clusters.push(sortedByLat.slice(startIdx, endIdx));
+                    // البحث عن أقرب مركز ضمن نطاق المسافة المسموح به
+                    for (let i = 0; i < centers.length; i++) {
+                        const center = centers[i];
+                        const distance = calculateGeographicDistance(
+                            point.longitude,
+                            point.latitude,
+                            center.longitude,
+                            center.latitude
+                        );
+                        
+                        // التحقق من أن المسافة ضمن النطاق المسموح به
+                        if (distance < minDistance && distance <= maxRadiusDeg) {
+                            minDistance = distance;
+                            closestClusterIndex = i;
+                        }
                     }
+                    
+                    // إذا لم يتم العثور على مركز ضمن النطاق، نبحث عن أقرب مركز بدون قيود
+                    if (closestClusterIndex === -1) {
+                        for (let i = 0; i < centers.length; i++) {
+                            const center = centers[i];
+                            const distance = calculateGeographicDistance(
+                                point.longitude,
+                                point.latitude,
+                                center.longitude,
+                                center.latitude
+                            );
+                            
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                closestClusterIndex = i;
+                            }
+                        }
+                    }
+                    
+                    if (closestClusterIndex !== -1) {
+                        clusters[closestClusterIndex].push(point);
+                    }
+                });
+                
+                // تحديث مراكز المجموعات
+                let centersChanged = false;
+                for (let i = 0; i < clusters.length; i++) {
+                    if (clusters[i].length > 0) {
+                        const newCenter = calculateClusterCenter(clusters[i]);
+                        const oldCenter = centers[i];
+                        
+                        // التحقق مما إذا تغير المركز بشكل كبير
+                        const distanceChange = calculateGeographicDistance(
+                            oldCenter.longitude,
+                            oldCenter.latitude,
+                            newCenter.longitude,
+                            newCenter.latitude
+                        );
+                        
+                        if (distanceChange > 0.0001) { // تغير كبير بما يكفي
+                            centers[i] = {
+                                longitude: newCenter.longitude,
+                                latitude: newCenter.latitude,
+                                points: []
+                            };
+                            centersChanged = true;
+                        }
+                    }
+                }
+                
+                // إذا لم تتغير المراكز بشكل كبير، نتوقف عن التكرار
+                if (!centersChanged) {
+                    break;
                 }
             }
             
+            // تقسيم المجموعات الكبيرة إلى مجموعات أصغر
             const finalClusters = [];
             for (const cluster of clusters) {
+                if (cluster.length === 0) continue;
+                
                 if (cluster.length <= maxPointsPerCluster) {
                     finalClusters.push(cluster);
                 } else {
-                    const subClusters = splitLargeCluster(cluster, maxPointsPerCluster);
-                    subClusters.forEach(subCluster => finalClusters.push(subCluster));
+                    // تقسيم المجموعة الكبيرة بناءً على القرب الجغرافي
+                    const subClusters = splitClusterByProximity(cluster, maxPointsPerCluster, maxRadiusKm);
+                    subClusters.forEach(subCluster => {
+                        if (subCluster.length > 0) {
+                            finalClusters.push(subCluster);
+                        }
+                    });
                 }
             }
             
-            return finalClusters;
+            // تحقيق التوازن بين المجموعات
+            return balanceClusters(finalClusters, maxPointsPerCluster);
         }
 
-        // تقسيم مجموعة كبيرة
-        function splitLargeCluster(cluster, maxPointsPerCluster) {
+        // تقسيم المجموعة بناءً على القرب الجغرافي
+        function splitClusterByProximity(cluster, maxPointsPerCluster, maxRadiusKm) {
             if (cluster.length <= maxPointsPerCluster) {
                 return [cluster];
             }
@@ -1620,21 +1688,221 @@
             const subClusters = [];
             const sortedByLat = [...cluster].sort((a, b) => a.latitude - b.latitude);
             
-            let startIdx = 0;
-            while (startIdx < sortedByLat.length) {
-                const endIdx = Math.min(startIdx + maxPointsPerCluster, sortedByLat.length);
-                subClusters.push(sortedByLat.slice(startIdx, endIdx));
-                startIdx = endIdx;
+            // استخدام خوارزمية تجميع بسيطة بناءً على خط العرض
+            let currentCluster = [];
+            let previousPoint = null;
+            
+            sortedByLat.forEach(point => {
+                if (currentCluster.length === 0) {
+                    currentCluster.push(point);
+                    previousPoint = point;
+                } else {
+                    // حساب المسافة من النقطة السابقة
+                    const distance = calculateGeographicDistance(
+                        point.longitude,
+                        point.latitude,
+                        previousPoint.longitude,
+                        previousPoint.latitude
+                    );
+                    
+                    // تحويل المسافة إلى كيلومتر
+                    const distanceKm = distance * 111;
+                    
+                    // إذا كانت المسافة صغيرة أو المجموعة لم تصل للحد الأقصى
+                    if (distanceKm <= maxRadiusKm && currentCluster.length < maxPointsPerCluster) {
+                        currentCluster.push(point);
+                    } else {
+                        // إضافة المجموعة الحالية وبدء مجموعة جديدة
+                        subClusters.push([...currentCluster]);
+                        currentCluster = [point];
+                    }
+                    previousPoint = point;
+                }
+            });
+            
+            // إضافة المجموعة الأخيرة
+            if (currentCluster.length > 0) {
+                subClusters.push(currentCluster);
             }
             
             return subClusters;
+        }
+
+        // تحقيق التوازن بين المجموعات
+        function balanceClusters(clusters, maxPointsPerCluster) {
+            if (clusters.length <= 1) return clusters;
+            
+            // حساب متوسط عدد النقاط في المجموعات
+            const totalPoints = clusters.reduce((sum, cluster) => sum + cluster.length, 0);
+            const avgPointsPerCluster = Math.ceil(totalPoints / clusters.length);
+            
+            // فرز المجموعات حسب حجمها
+            clusters.sort((a, b) => a.length - b.length);
+            
+            const balancedClusters = [...clusters];
+            let changesMade = true;
+            
+            // محاولة تحقيق التوازن
+            while (changesMade) {
+                changesMade = false;
+                
+                for (let i = 0; i < balancedClusters.length - 1; i++) {
+                    const smallCluster = balancedClusters[i];
+                    const largeCluster = balancedClusters[balancedClusters.length - 1];
+                    
+                    // إذا كانت الفروق كبيرة جداً
+                    if (largeCluster.length - smallCluster.length > avgPointsPerCluster * 0.5) {
+                        // نقل بعض النقاط من المجموعة الكبيرة إلى الصغيرة
+                        const pointsToMove = Math.min(
+                            Math.floor((largeCluster.length - smallCluster.length) / 2),
+                            largeCluster.length - 1
+                        );
+                        
+                        // نقل النقاط الأقرب جغرافياً إلى المجموعة الصغيرة
+                        const smallClusterCenter = calculateClusterCenter(smallCluster);
+                        const sortedLargeCluster = [...largeCluster].sort((a, b) => {
+                            const distA = calculateGeographicDistance(
+                                a.longitude,
+                                a.latitude,
+                                smallClusterCenter.longitude,
+                                smallClusterCenter.latitude
+                            );
+                            const distB = calculateGeographicDistance(
+                                b.longitude,
+                                b.latitude,
+                                smallClusterCenter.longitude,
+                                smallClusterCenter.latitude
+                            );
+                            return distA - distB;
+                        });
+                        
+                        // نقل أقرب النقاط
+                        const pointsToTransfer = sortedLargeCluster.slice(0, pointsToMove);
+                        smallCluster.push(...pointsToTransfer);
+                        balancedClusters[balancedClusters.length - 1] = largeCluster.filter(
+                            point => !pointsToTransfer.includes(point)
+                        );
+                        
+                        changesMade = true;
+                        break;
+                    }
+                }
+                
+                // إعادة ترتيب المجموعات بعد كل تعديل
+                balancedClusters.sort((a, b) => a.length - b.length);
+            }
+            
+            // التأكد من عدم تجاوز أي مجموعة للحد الأقصى
+            const finalClusters = [];
+            for (const cluster of balancedClusters) {
+                if (cluster.length <= maxPointsPerCluster) {
+                    finalClusters.push(cluster);
+                } else {
+                    // إذا كانت المجموعة لا تزال كبيرة، نقسمها
+                    const maxSubClusters = Math.ceil(cluster.length / maxPointsPerCluster);
+                    const pointsPerSubCluster = Math.ceil(cluster.length / maxSubClusters);
+                    
+                    const sortedCluster = [...cluster].sort((a, b) => a.latitude - b.latitude);
+                    
+                    for (let i = 0; i < maxSubClusters; i++) {
+                        const start = i * pointsPerSubCluster;
+                        const end = Math.min(start + pointsPerSubCluster, sortedCluster.length);
+                        if (start < sortedCluster.length) {
+                            finalClusters.push(sortedCluster.slice(start, end));
+                        }
+                    }
+                }
+            }
+            
+            return finalClusters;
+        }
+
+        // حساب مركز المجموعة
+        function calculateClusterCenter(points) {
+            if (points.length === 0) {
+                return { longitude: 0, latitude: 0 };
+            }
+            
+            const sumLon = points.reduce((sum, p) => sum + p.longitude, 0);
+            const sumLat = points.reduce((sum, p) => sum + p.latitude, 0);
+            
+            return {
+                longitude: sumLon / points.length,
+                latitude: sumLat / points.length
+            };
+        }
+
+        // حساب المسافة الجغرافية بين نقطتين (بالدرجات)
+        function calculateGeographicDistance(lon1, lat1, lon2, lat2) {
+            const dx = lon1 - lon2;
+            const dy = lat1 - lat2;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // حساب المسافة بالكيلومترات
+        function calculateDistanceInKm(lon1, lat1, lon2, lat2) {
+            const R = 6371; // نصف قطر الأرض بالكيلومترات
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // حساب إحصائيات المجموعات
+        function calculateClusterStats(clusters) {
+            return clusters.map((cluster, index) => {
+                if (cluster.length === 0) {
+                    return {
+                        clusterId: index + 1,
+                        pointCount: 0,
+                        avgDistance: 0,
+                        maxDistance: 0,
+                        density: 0
+                    };
+                }
+                
+                const center = calculateClusterCenter(cluster);
+                let totalDistance = 0;
+                let maxDistance = 0;
+                
+                cluster.forEach(point => {
+                    const distance = calculateDistanceInKm(
+                        point.longitude,
+                        point.latitude,
+                        center.longitude,
+                        center.latitude
+                    );
+                    totalDistance += distance;
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                    }
+                });
+                
+                const avgDistance = totalDistance / cluster.length;
+                
+                // حساب الكثافة (عدد النقاط لكل كيلومتر مربع)
+                // تقدير المساحة بناءً على المسافة القصوى
+                const area = Math.PI * Math.pow(maxDistance, 2);
+                const density = area > 0 ? cluster.length / area : cluster.length;
+                
+                return {
+                    clusterId: index + 1,
+                    pointCount: cluster.length,
+                    avgDistance: parseFloat(avgDistance.toFixed(2)),
+                    maxDistance: parseFloat(maxDistance.toFixed(2)),
+                    density: parseFloat(density.toFixed(2))
+                };
+            });
         }
 
         // ============================================
         // عرض النتائج
         // ============================================
 
-        // عرض صفحة من النتائج
         function displayResultsPage(page) {
             currentPage = page;
             totalPages = Math.ceil(processedData.length / itemsPerPage);
@@ -1653,6 +1921,7 @@
                 const row = document.createElement('tr');
                 const group = item.group || 0;
                 const groupSize = item.groupSize || 0;
+                const distance = item.distanceToCenter || 0;
                 
                 const groupColor = group > 0 ? groupColors[(group - 1) % groupColors.length] : '#ccc';
                 
@@ -1674,16 +1943,15 @@
                         ${group > 0 ? `<span class="group-badge" style="background-color: ${groupColor};">${group}</span>` : '-'}
                     </td>
                     <td>${groupSize > 0 ? groupSize : '-'}</td>
+                    <td>${distance > 0 ? distance.toFixed(2) + ' كم' : '-'}</td>
                 `;
                 tbody.appendChild(row);
             });
             
-            // حساب إجمالي المجموعات
             for (const polygon in polygonGroups) {
                 totalGroups += polygonGroups[polygon].totalClusters;
             }
             
-            // تحديث الإحصائيات
             const linkedCount = processedData.filter(item => item.polygon !== "غير مرتبط").length;
             updateStats({
                 total: processedData.length,
@@ -1695,7 +1963,6 @@
             updatePaginationControls();
         }
 
-        // تحديث عناصر التحكم في الصفحات
         function updatePaginationControls() {
             const paginationControls = document.getElementById('pagination-controls');
             const pageInfo = document.getElementById('page-info');
@@ -1712,33 +1979,30 @@
             }
         }
 
-        // الانتقال للصفحة السابقة
         function previousPage() {
             if (currentPage > 1) {
                 displayResultsPage(currentPage - 1);
             }
         }
 
-        // الانتقال للصفحة التالية
         function nextPage() {
             if (currentPage < totalPages) {
                 displayResultsPage(currentPage + 1);
             }
         }
 
-        // عرض إحصائيات المجموعات
         function displayPolygonGroupsSummary() {
             const summaryDiv = document.getElementById('polygon-groups-summary');
             
             if (Object.keys(polygonGroups).length === 0) {
                 summaryDiv.innerHTML = `
-                    <h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>
+                    <h3><i class="fas fa-layer-group"></i> توزيع المجموعات الجغرافية</h3>
                     <p style="color: #666; text-align: center;">لا توجد بيانات للعرض</p>
                 `;
                 return;
             }
             
-            let html = `<h3><i class="fas fa-layer-group"></i> توزيع المجموعات</h3>`;
+            let html = `<h3><i class="fas fa-layer-group"></i> توزيع المجموعات الجغرافية</h3>`;
             
             for (const polygonName in polygonGroups) {
                 const stats = polygonGroups[polygonName];
@@ -1757,12 +2021,16 @@
                             <span style="color: #666; font-size: 0.9rem;">${stats.totalClusters} مجموعة</span>
                         </div>
                         <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">
-                            ${stats.clusters.map((cluster, idx) => 
-                                `المجموعة ${idx + 1}: ${cluster.length} نقطة`
-                            ).join(' | ')}
+                            ${stats.clusters.map((cluster, idx) => {
+                                const clusterStat = stats.clusterStats ? stats.clusterStats[idx] : null;
+                                const distanceInfo = clusterStat ? 
+                                    ` | متوسط المسافة: ${clusterStat.avgDistance} كم` : '';
+                                return `المجموعة ${idx + 1}: ${cluster.length} نقطة${distanceInfo}`;
+                            }).join(' | ')}
                         </div>
-                        <div style="margin-top: 8px; font-size: 0.85rem; color: #888; font-style: italic;">
-                            <i class="fas fa-sort-amount-down"></i> مرقمة من الجنوب إلى الشمال
+                        <div class="cluster-details">
+                            <i class="fas fa-info-circle"></i> 
+                            تم تجميع النقاط القريبة جغرافياً في نفس المجموعة مع تحقيق توازن في العدد
                         </div>
                     </div>
                 `;
@@ -1771,7 +2039,6 @@
             summaryDiv.innerHTML = html;
         }
 
-        // تحديث الإحصائيات
         function updateStats({ total, linked, unlinked, totalGroups }) {
             document.getElementById('total-points').textContent = total.toLocaleString();
             document.getElementById('linked-points').textContent = linked.toLocaleString();
@@ -1783,7 +2050,6 @@
         // تحميل النتائج
         // ============================================
 
-        // تحميل النتائج كملف Excel
         function downloadResults() {
             if (processedData.length === 0) {
                 showMessage('❌ لا توجد نتائج للتحميل', 'error');
@@ -1795,7 +2061,7 @@
             setTimeout(() => {
                 try {
                     const worksheetData = [
-                        ["رقم العداد", "الإحداثي الطولي", "الإحداثي العرضي", "اسم المضلع", "المجموعة", "عدد النقاط في المجموعة", "حالة الربط"]
+                        ["رقم العداد", "الإحداثي الطولي", "الإحداثي العرضي", "اسم المضلع", "المجموعة", "عدد النقاط في المجموعة", "المسافة إلى المركز (كم)", "حالة الربط"]
                     ];
                     
                     const batchSize = 50000;
@@ -1812,6 +2078,7 @@
                                 item.polygon,
                                 item.group || '',
                                 item.groupSize || '',
+                                item.distanceToCenter ? item.distanceToCenter.toFixed(2) : '',
                                 item.polygon === "غير مرتبط" ? "غير مرتبط" : "مرتبط"
                             ]);
                         }
@@ -1839,7 +2106,6 @@
             }, 100);
         }
 
-        // إنشاء ملف Excel
         function createExcelFile(worksheetData) {
             try {
                 const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -1855,35 +2121,43 @@
                     ["النقاط غير المرتبطة", processedData.filter(item => item.polygon === "غير مرتبط").length],
                     ["إجمالي المجموعات", Object.keys(polygonGroups).reduce((sum, name) => sum + polygonGroups[name].totalClusters, 0)],
                     [],
-                    ["توزيع المجموعات حسب المضلع (مرقمة من الجنوب إلى الشمال)"]
+                    ["توزيع المجموعات حسب المضلع"]
                 ];
                 
                 for (const polygonName in polygonGroups) {
                     const stats = polygonGroups[polygonName];
                     statsWorksheetData.push([polygonName, `${stats.totalPoints} نقطة`, `${stats.totalClusters} مجموعة`]);
                     
-                    stats.clusters.forEach((cluster, idx) => {
-                        const avgLat = cluster.reduce((sum, p) => sum + p.latitude, 0) / cluster.length;
-                        statsWorksheetData.push([`  المجموعة ${idx + 1}`, `${cluster.length} نقطة`, `متوسط خط العرض: ${avgLat.toFixed(6)}`]);
-                    });
+                    if (stats.clusterStats) {
+                        stats.clusterStats.forEach((clusterStat, idx) => {
+                            statsWorksheetData.push([
+                                `  المجموعة ${clusterStat.clusterId}`,
+                                `${clusterStat.pointCount} نقطة`,
+                                `متوسط المسافة: ${clusterStat.avgDistance} كم`,
+                                `أقصى مسافة: ${clusterStat.maxDistance} كم`,
+                                `الكثافة: ${clusterStat.density} نقطة/كم²`
+                            ]);
+                        });
+                    } else {
+                        stats.clusters.forEach((cluster, idx) => {
+                            statsWorksheetData.push([`  المجموعة ${idx + 1}`, `${cluster.length} نقطة`, '', '', '']);
+                        });
+                    }
                 }
                 
                 const statsWorksheet = XLSX.utils.aoa_to_sheet(statsWorksheetData);
                 XLSX.utils.book_append_sheet(workbook, statsWorksheet, "الإحصائيات");
                 
-                // إنشاء الملف
                 const excelBuffer = XLSX.write(workbook, { 
                     bookType: 'xlsx', 
                     type: 'array',
                     cellStyles: true 
                 });
                 
-                // حفظ الملف
                 const blob = new Blob([excelBuffer], { 
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
                 });
                 
-                // تحميل الملف
                 const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-');
                 saveAs(blob, `النتائج_المعالجة_${timestamp}.xlsx`);
                 
@@ -1901,7 +2175,6 @@
         // دوال مساعدة
         // ============================================
 
-        // تنسيق حجم الملف
         function formatFileSize(bytes) {
             if (bytes < 1024) return bytes + ' بايت';
             if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' كيلوبايت';
@@ -1909,7 +2182,6 @@
             return (bytes / 1073741824).toFixed(1) + ' جيجابايت';
         }
 
-        // عرض نافذة التحميل
         function showLoading(message = 'جاري المعالجة...') {
             document.getElementById('loading-text').textContent = message;
             document.getElementById('loading-overlay').style.display = 'flex';
@@ -1917,12 +2189,10 @@
             document.getElementById('progress-percentage').textContent = '0%';
         }
 
-        // إخفاء نافذة التحميل
         function hideLoading() {
             document.getElementById('loading-overlay').style.display = 'none';
         }
 
-        // عرض رسالة
         function showMessage(text, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = text;
@@ -1937,12 +2207,10 @@
         // أحداث الصفحة
         // ============================================
 
-        // تحميل البيانات النموذجية عند فتح الصفحة
         window.addEventListener('load', function() {
             loadSampleData();
         });
 
-        // دعم سحب وإفلات الملفات
         const uploadAreas = document.querySelectorAll('.upload-area');
         
         uploadAreas.forEach(area => {
