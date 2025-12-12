@@ -266,7 +266,7 @@
             border-radius: 5px;
         }
 
-        /* معلومات المضللات */
+        /* معلومات المضلعات */
         .polygon-info {
             background: #e8f4fc;
             padding: 10px;
@@ -636,8 +636,8 @@
     <div class="container">
         <!-- شريط العنوان -->
         <header class="header">
-            <h1><i class="fas fa-map-marked-alt"></i> نظام التوزيع الجغرافي المتقدم</h1>
-            <p>توزيع النقاط جغرافياً بناءً على القرب الجغرافي والترتيب من الجنوب إلى الشمال</p>
+            <h1><i class="fas fa-map-marked-alt"></i> نظام التوزيع الجغرافي (توزيع مجموعات)</h1>
+            <p>توزيع حائل مجموعات</p>
         </header>
 
         <div class="main-content">
@@ -659,7 +659,7 @@
                 <div class="upload-area" id="kmz-upload-area" onclick="document.getElementById('kmz-file').click()">
                     <i class="fas fa-map"></i>
                     <h3>ملف KMZ</h3>
-                    <p>يحتوي على المضللات الجغرافية</p>
+                    <p>يحتوي على المضلعات الجغرافية</p>
                     <div class="file-info">
                         <i class="fas fa-info-circle"></i> الحد الأقصى: 100MB | يدعم: .kmz, .kml
                     </div>
@@ -705,7 +705,7 @@
                     <div class="progress" id="progress"></div>
                 </div>
 
-                <!-- معلومات المضللات -->
+                <!-- معلومات المضلعات -->
                 <div class="polygon-info" id="polygon-info" style="display: none;">
                     <i class="fas fa-info-circle"></i> <span id="polygon-count">0</span> مضلع تم تحميلها
                 </div>
@@ -808,7 +808,7 @@
 
         <!-- التذييل -->
         <footer class="footer">
-            <p>© 2024 نظام التوزيع الجغرافي المتقدم | تم التطوير باستخدام HTML, CSS, JavaScript</p>
+            <p>© 2025 نظام توزيع حائل مجموعات | تم التطوير باستخدام 0581217473</p>
         </footer>
     </div>
 
@@ -1393,7 +1393,7 @@
             }
             
             if (polygonsData.length === 0) {
-                showMessage('⚠️ لم يتم رفع ملف KMZ. سيتم توزيع النقاط فقط بدون ربط بالمضللات', 'warning');
+                showMessage('⚠️ لم يتم رفع ملف KMZ. سيتم توزيع النقاط فقط بدون ربط بالمضلعات', 'warning');
             }
             
             showLoading('جاري توزيع البيانات جغرافياً...');
