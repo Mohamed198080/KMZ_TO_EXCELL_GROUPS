@@ -11,7 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/@tmcw/togeojson@4.5.0/dist/togeojson.umd.js"></script>
     <style>
-        /* CSS يبقى كما هو مع إضافة بعض التعديلات الطفيفة */
+        /* CSS يبقى كما هو ... */
+        /* نفس CSS السابق */
         * {
             margin: 0;
             padding: 0;
@@ -597,6 +598,15 @@
             font-weight: bold;
             color: #2c3e50;
         }
+
+        .polygon-info {
+            background: #e8f4fc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -670,6 +680,11 @@
                 
                 <div class="progress-bar">
                     <div class="progress" id="progress"></div>
+                </div>
+
+                <!-- معلومات المضللات -->
+                <div class="polygon-info" id="polygon-info" style="display: none;">
+                    <i class="fas fa-info-circle"></i> <span id="polygon-count">0</span> مضلع تم تحميلها
                 </div>
             </div>
 
@@ -746,7 +761,7 @@
                 <div class="step">
                     <div class="step-number">1</div>
                     <h3>تنسيق ملف Excel</h3>
-                    <p>يدعم الملفات حتى 50MB. يجب أن يحتوي على الأعمدة التالية: Counter_Number, Longitude, Latitude</p>
+                    <p>يدعم الملفات حتى 50MB. يجب أن يحتوي على أعمدة: رقم العداد، الإحداثي الطولي، الإحداثي العرضي</p>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
@@ -783,6 +798,7 @@
                 <div class="progress" id="detailed-progress"></div>
             </div>
             <p id="progress-percentage" style="margin-top: 10px; font-weight: bold;">0%</p>
+            <p id="processing-info" style="margin-top: 10px; font-size: 0.9rem; color: #666;"></p>
         </div>
     </div>
 
@@ -797,6 +813,7 @@
         let excelData = [];
         let polygonsData = [];
         let polygonGroups = {};
+        let polygonBounds = {}; // تخزين حدود كل مضلع لتحسين الأداء
         let groupColors = [
             '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', 
             '#EF476F', '#9B5DE5', '#F15BB5', '#00BBF9', '#00F5D4',
@@ -903,6 +920,8 @@
             }
             if (type === 'kmz') {
                 polygonsData = [];
+                polygonBounds = {};
+                document.getElementById('polygon-info').style.display = 'none';
             }
         }
 
@@ -1023,14 +1042,48 @@
                 // استخراج المضللات من GeoJSON
                 polygonsData = extractPolygonsFromGeoJSON(geojson);
                 
+                // حساب حدود كل مضلع لتحسين الأداء
+                calculatePolygonBounds();
+                
                 hideLoading();
                 showMessage(`تم استخراج ${polygonsData.length} مضلع من ملف KMZ`, 'success');
+                
+                // عرض معلومات المضللات
+                document.getElementById('polygon-count').textContent = polygonsData.length;
+                document.getElementById('polygon-info').style.display = 'block';
                 
             } catch (error) {
                 console.error('خطأ في قراءة ملف KMZ:', error);
                 hideLoading();
                 showMessage('خطأ في قراءة ملف KMZ. تأكد من صحة الملف', 'error');
             }
+        }
+
+        // حساب حدود كل مضلع لتحسين أداء الربط
+        function calculatePolygonBounds() {
+            polygonBounds = {};
+            
+            polygonsData.forEach(polygon => {
+                const bounds = {
+                    minLon: Infinity,
+                    maxLon: -Infinity,
+                    minLat: Infinity,
+                    maxLat: -Infinity
+                };
+                
+                // حساب الحدود الدنيا والعليا للمضلع
+                polygon.coordinates.forEach(coord => {
+                    const lon = coord[0];
+                    const lat = coord[1];
+                    
+                    if (lon < bounds.minLon) bounds.minLon = lon;
+                    if (lon > bounds.maxLon) bounds.maxLon = lon;
+                    if (lat < bounds.minLat) bounds.minLat = lat;
+                    if (lat > bounds.maxLat) bounds.maxLat = lat;
+                });
+                
+                polygonBounds[polygon.name] = bounds;
+            });
         }
 
         // استخراج المضللات من GeoJSON
@@ -1084,19 +1137,22 @@
             // البحث عن أسماء الأعمدة المحتملة
             const counterCol = findColumn(columns, [
                 'Counter_Number', 'Counter_No', 'Counter', 'رقم العداد', 'العداد', 
-                'meter_number', 'meter_no', 'METER_NUM', 'meter_num', 'عداد', 'رقم'
+                'meter_number', 'meter_no', 'METER_NUM', 'meter_num', 'عداد', 'رقم',
+                'CounterNumber', 'counter_number', 'رقم_العداد'
             ]);
             const lonCol = findColumn(columns, [
                 'Longitude', 'Lon', 'X', 'الطول', 'الإحداثي الطولي', 
-                'long', 'lng', 'LONGITUDE', 'longitude', 'إحداثي طولي'
+                'long', 'lng', 'LONGITUDE', 'longitude', 'إحداثي طولي',
+                'x_coord', 'X_COORD', 'إحداثي_x', 'lng', 'lngitude'
             ]);
             const latCol = findColumn(columns, [
                 'Latitude', 'Lat', 'Y', 'العرض', 'الإحداثي العرضي', 
-                'lat', 'LATITUDE', 'latitude', 'إحداثي عرضي'
+                'lat', 'LATITUDE', 'latitude', 'إحداثي عرضي',
+                'y_coord', 'Y_COORD', 'إحداثي_y', 'lat', 'latitude'
             ]);
             
             if (!counterCol || !lonCol || !latCol) {
-                showMessage('لم يتم العثور على الأعمدة المطلوبة في ملف Excel', 'error');
+                showMessage('لم يتم العثور على الأعمدة المطلوبة في ملف Excel. تأكد من وجود أعمدة رقم العداد، الطول، والعرض', 'error');
                 return [];
             }
             
@@ -1106,7 +1162,13 @@
             
             jsonData.forEach((row, index) => {
                 try {
-                    const counter = parseFloat(row[counterCol]) || row[counterCol] || `ID_${index + 1}`;
+                    let counter = row[counterCol];
+                    if (counter === undefined || counter === null || counter === '') {
+                        counter = `ID_${index + 1}`;
+                    } else {
+                        counter = parseFloat(counter) || counter.toString();
+                    }
+                    
                     const longitude = parseFloat(row[lonCol]);
                     const latitude = parseFloat(row[latCol]);
                     
@@ -1258,6 +1320,9 @@
                     },
                 ];
                 
+                // حساب حدود المضللات
+                calculatePolygonBounds();
+                
                 // عرض الملفات في القائمة
                 const fileList = document.getElementById('file-list');
                 fileList.innerHTML = `
@@ -1284,6 +1349,10 @@
                 // عرض البيانات
                 displaySampleData(excelData);
                 
+                // عرض معلومات المضللات
+                document.getElementById('polygon-count').textContent = polygonsData.length;
+                document.getElementById('polygon-info').style.display = 'block';
+                
                 hideLoading();
                 showMessage('✅ تم تحميل البيانات النموذجية بنجاح', 'success');
                 
@@ -1295,6 +1364,10 @@
             if (excelData.length === 0) {
                 showMessage('❌ لا توجد بيانات للمعالجة. يرجى رفع ملف Excel أولاً', 'error');
                 return;
+            }
+            
+            if (polygonsData.length === 0) {
+                showMessage('⚠️ لم يتم رفع ملف KMZ. سيتم عرض النقاط فقط بدون ربط بالمضللات', 'warning');
             }
             
             showLoading('جاري معالجة البيانات...');
@@ -1323,11 +1396,8 @@
                     let polygonName = "غير مرتبط";
                     
                     // التحقق مما إذا كانت النقطة داخل أي مضلع
-                    for (const polygon of polygonsData) {
-                        if (pointInPolygon(item.longitude, item.latitude, polygon.coordinates)) {
-                            polygonName = polygon.name;
-                            break;
-                        }
+                    if (polygonsData.length > 0) {
+                        polygonName = findPolygonForPoint(item.longitude, item.latitude);
                     }
                     
                     processedData.push({
@@ -1342,6 +1412,8 @@
                 const progressPercent = Math.round((currentBatch / totalBatches) * 100);
                 document.getElementById('detailed-progress').style.width = `${progressPercent}%`;
                 document.getElementById('progress-percentage').textContent = `${progressPercent}%`;
+                document.getElementById('processing-info').textContent = 
+                    `تم معالجة ${currentBatch * batchSize} من ${excelData.length} نقطة`;
                 
                 // إذا كانت هناك دفعات أخرى، نستمر
                 if (currentBatch < totalBatches) {
@@ -1354,6 +1426,51 @@
             
             // بدأ معالجة الدفعة الأولى
             processBatch();
+        }
+
+        // دالة محسنة للعثور على المضلع المناسب للنقطة
+        function findPolygonForPoint(longitude, latitude) {
+            let polygonName = "غير مرتبط";
+            
+            // البحث في جميع المضللات
+            for (const polygon of polygonsData) {
+                const bounds = polygonBounds[polygon.name];
+                
+                // التحقق السريع من حدود المضلع أولاً (تحسين الأداء)
+                if (bounds && 
+                    longitude >= bounds.minLon && longitude <= bounds.maxLon &&
+                    latitude >= bounds.minLat && latitude <= bounds.maxLat) {
+                    
+                    // إذا كانت النقطة ضمن حدود المضلع، تحقق بدقة
+                    if (pointInPolygon(longitude, latitude, polygon.coordinates)) {
+                        polygonName = polygon.name;
+                        break;
+                    }
+                }
+            }
+            
+            return polygonName;
+        }
+
+        // دالة للتحقق مما إذا كانت النقطة داخل المضلع
+        function pointInPolygon(longitude, latitude, polygon) {
+            // خوارزمية Ray Casting المحسنة
+            let inside = false;
+            const x = longitude;
+            const y = latitude;
+            
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i][0], yi = polygon[i][1];
+                const xj = polygon[j][0], yj = polygon[j][1];
+                
+                // التحقق من تقاطع الشعاع
+                const intersect = ((yi > y) !== (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
         }
 
         // إكمال المعالجة
@@ -1490,24 +1607,6 @@
             }
             
             return subClusters;
-        }
-
-        // دالة للتحقق مما إذا كانت النقطة داخل المضلع
-        function pointInPolygon(longitude, latitude, polygon) {
-            // خوارزمية Ray Casting
-            let inside = false;
-            
-            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-                const xi = polygon[i][0], yi = polygon[i][1];
-                const xj = polygon[j][0], yj = polygon[j][1];
-                
-                const intersect = ((yi > latitude) !== (yj > latitude)) &&
-                    (longitude < (xj - xi) * (latitude - yi) / (yj - yi) + xi);
-                
-                if (intersect) inside = !inside;
-            }
-            
-            return inside;
         }
 
         // عرض صفحة من النتائج
@@ -1839,14 +1938,6 @@
                     handleFileUpload(files[0], type);
                 }
             });
-        });
-
-        // تغيير عدد العناصر لكل صفحة
-        document.getElementById('max-points-per-cluster').addEventListener('change', function() {
-            if (processedData.length > 0) {
-                itemsPerPage = Math.max(50, parseInt(this.value) || 100);
-                displayResultsPage(1);
-            }
         });
     </script>
 </body>
