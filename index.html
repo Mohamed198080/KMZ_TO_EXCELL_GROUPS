@@ -11,8 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/@tmcw/togeojson@4.5.0/dist/togeojson.umd.js"></script>
     <style>
-        /* CSS يبقى كما هو ... */
-        /* نفس CSS السابق */
+        /* إعدادات عامة */
         * {
             margin: 0;
             padding: 0;
@@ -33,6 +32,7 @@
             padding: 20px;
         }
 
+        /* شريط العنوان */
         .header {
             background: white;
             padding: 30px;
@@ -53,6 +53,7 @@
             font-size: 1.1rem;
         }
 
+        /* المحتوى الرئيسي */
         .main-content {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -65,6 +66,7 @@
             }
         }
 
+        /* قسم رفع الملفات */
         .upload-section {
             background: white;
             padding: 25px;
@@ -160,6 +162,16 @@
             margin-top: 5px;
         }
 
+        .file-info {
+            background: #e8f4fc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+
+        /* أزرار الإجراءات */
         .action-buttons {
             margin-top: 25px;
             display: flex;
@@ -200,6 +212,7 @@
             transform: translateY(-2px);
         }
 
+        /* قسم التجميع */
         .clustering-section {
             background: #f8f9fa;
             padding: 15px;
@@ -253,6 +266,17 @@
             border-radius: 5px;
         }
 
+        /* معلومات المضللات */
+        .polygon-info {
+            background: #e8f4fc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+
+        /* قسم النتائج */
         .results-section {
             background: white;
             padding: 25px;
@@ -267,6 +291,7 @@
             border-bottom: 3px solid #3498db;
         }
 
+        /* الإحصائيات */
         .stats-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -318,6 +343,63 @@
             opacity: 0.9;
         }
 
+        /* توزيع المجموعات */
+        .polygon-groups {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .polygon-groups h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .polygon-group-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-right: 4px solid #3498db;
+        }
+
+        /* عناصر التحكم في الصفحات */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pagination-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* الجدول */
         .table-container {
             overflow-x: auto;
             margin-bottom: 20px;
@@ -367,6 +449,7 @@
             text-align: center;
         }
 
+        /* زر التحميل */
         .download-section {
             margin-top: 25px;
         }
@@ -391,6 +474,7 @@
             background: #c0392b;
         }
 
+        /* نافذة التحميل */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -428,6 +512,7 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* الرسائل */
         .message {
             padding: 15px;
             border-radius: 8px;
@@ -463,6 +548,24 @@
             display: block;
         }
 
+        /* شريط التقدم */
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #27ae60;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* قسم التعليمات */
         .instructions {
             background: white;
             padding: 25px;
@@ -513,99 +616,12 @@
             color: #666;
         }
 
+        /* التذييل */
         .footer {
             text-align: center;
             color: white;
             margin-top: 40px;
             padding: 20px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: #f0f0f0;
-            border-radius: 5px;
-            margin-top: 15px;
-            overflow: hidden;
-        }
-
-        .progress {
-            height: 100%;
-            background: #27ae60;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .polygon-groups {
-            margin-top: 20px;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-        }
-
-        .polygon-groups h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-
-        .polygon-group-item {
-            background: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-right: 4px solid #3498db;
-        }
-
-        .file-info {
-            background: #e8f4fc;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #2c3e50;
-        }
-
-        .pagination-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            margin-top: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .pagination-btn {
-            padding: 8px 16px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .pagination-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .page-info {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .polygon-info {
-            background: #e8f4fc;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #2c3e50;
         }
     </style>
 </head>
@@ -803,7 +819,9 @@
     </div>
 
     <script>
+        // ============================================
         // المتغيرات العامة
+        // ============================================
         let uploadedFiles = {
             excel: null,
             kmz: null
@@ -813,7 +831,9 @@
         let excelData = [];
         let polygonsData = [];
         let polygonGroups = {};
-        let polygonBounds = {}; // تخزين حدود كل مضلع لتحسين الأداء
+        let polygonBounds = {}; // لتخزين حدود كل مضلع لتحسين الأداء
+        
+        // ألوان للمجموعات
         let groupColors = [
             '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', 
             '#EF476F', '#9B5DE5', '#F15BB5', '#00BBF9', '#00F5D4',
@@ -826,7 +846,11 @@
         let itemsPerPage = 100;
         let totalPages = 1;
 
-        // استمع لتغييرات الملفات
+        // ============================================
+        // دوال التعامل مع الملفات
+        // ============================================
+
+        // إضافة مستمعين لأحداث تغيير الملفات
         document.getElementById('excel-file').addEventListener('change', function(e) {
             handleFileUpload(e.target.files[0], 'excel');
         });
@@ -852,7 +876,7 @@
                 return;
             }
             
-            // التحقق من حجم الملف (حد أقصى 50MB لملفات Excel و 100MB لملفات KMZ)
+            // التحقق من حجم الملف
             const maxSize = type === 'excel' ? 50 : 100;
             if (file.size > maxSize * 1024 * 1024) {
                 showMessage(`حجم الملف كبير جداً. الحد الأقصى ${maxSize}MB`, 'error');
@@ -865,13 +889,10 @@
             // عرض الملف في القائمة
             displayFileInList(file, type);
             
-            // إذا كان ملف Excel، قراءته وعرض بياناته
+            // قراءة الملف حسب نوعه
             if (type === 'excel') {
                 readExcelFile(file);
-            }
-            
-            // إذا كان ملف KMZ، قراءته واستخراج المضللات
-            if (type === 'kmz') {
+            } else {
                 readKMZFile(file);
             }
             
@@ -925,7 +946,11 @@
             }
         }
 
-        // قراءة ملف Excel باستخدام SheetJS
+        // ============================================
+        // قراءة ملفات Excel
+        // ============================================
+
+        // قراءة ملف Excel
         function readExcelFile(file) {
             showLoading('جاري قراءة ملف Excel...');
             
@@ -957,11 +982,9 @@
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
                         
-                        // الحصول على اسم الورقة الأولى
                         const firstSheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[firstSheetName];
                         
-                        // تحويل الورقة إلى JSON
                         jsonData = XLSX.utils.sheet_to_json(worksheet);
                     }
                     
@@ -997,134 +1020,6 @@
             } else {
                 reader.readAsArrayBuffer(file);
             }
-        }
-
-        // قراءة ملف KMZ واستخراج المضللات
-        async function readKMZFile(file) {
-            try {
-                showLoading('جاري قراءة ملف KMZ...');
-                
-                let geojson;
-                
-                if (file.name.toLowerCase().endsWith('.kml')) {
-                    // قراءة ملف KML مباشرة
-                    const kmlText = await file.text();
-                    const parser = new DOMParser();
-                    const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
-                    geojson = toGeoJSON.kml(kmlDoc);
-                } else {
-                    // استخراج KML من KMZ
-                    const zip = new JSZip();
-                    const zipData = await zip.loadAsync(file);
-                    
-                    // البحث عن ملف KML داخل KMZ
-                    let kmlFile = null;
-                    for (const filename in zipData.files) {
-                        if (filename.toLowerCase().endsWith('.kml')) {
-                            kmlFile = zipData.files[filename];
-                            break;
-                        }
-                    }
-                    
-                    if (!kmlFile) {
-                        throw new Error('لم يتم العثور على ملف KML داخل ملف KMZ');
-                    }
-                    
-                    // قراءة محتوى KML
-                    const kmlText = await kmlFile.async('text');
-                    const parser = new DOMParser();
-                    const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
-                    
-                    // تحويل KML إلى GeoJSON
-                    geojson = toGeoJSON.kml(kmlDoc);
-                }
-                
-                // استخراج المضللات من GeoJSON
-                polygonsData = extractPolygonsFromGeoJSON(geojson);
-                
-                // حساب حدود كل مضلع لتحسين الأداء
-                calculatePolygonBounds();
-                
-                hideLoading();
-                showMessage(`تم استخراج ${polygonsData.length} مضلع من ملف KMZ`, 'success');
-                
-                // عرض معلومات المضللات
-                document.getElementById('polygon-count').textContent = polygonsData.length;
-                document.getElementById('polygon-info').style.display = 'block';
-                
-            } catch (error) {
-                console.error('خطأ في قراءة ملف KMZ:', error);
-                hideLoading();
-                showMessage('خطأ في قراءة ملف KMZ. تأكد من صحة الملف', 'error');
-            }
-        }
-
-        // حساب حدود كل مضلع لتحسين أداء الربط
-        function calculatePolygonBounds() {
-            polygonBounds = {};
-            
-            polygonsData.forEach(polygon => {
-                const bounds = {
-                    minLon: Infinity,
-                    maxLon: -Infinity,
-                    minLat: Infinity,
-                    maxLat: -Infinity
-                };
-                
-                // حساب الحدود الدنيا والعليا للمضلع
-                polygon.coordinates.forEach(coord => {
-                    const lon = coord[0];
-                    const lat = coord[1];
-                    
-                    if (lon < bounds.minLon) bounds.minLon = lon;
-                    if (lon > bounds.maxLon) bounds.maxLon = lon;
-                    if (lat < bounds.minLat) bounds.minLat = lat;
-                    if (lat > bounds.maxLat) bounds.maxLat = lat;
-                });
-                
-                polygonBounds[polygon.name] = bounds;
-            });
-        }
-
-        // استخراج المضللات من GeoJSON
-        function extractPolygonsFromGeoJSON(geojson) {
-            const polygons = [];
-            
-            if (!geojson || !geojson.features) {
-                return polygons;
-            }
-            
-            geojson.features.forEach(feature => {
-                if (feature.geometry && feature.geometry.type === 'Polygon') {
-                    const polygonName = feature.properties?.name || 
-                                      feature.properties?.Name || 
-                                      feature.properties?.description ||
-                                      feature.properties?.تسمية ||
-                                      `مضلع ${polygons.length + 1}`;
-                    
-                    polygons.push({
-                        name: polygonName,
-                        coordinates: feature.geometry.coordinates[0],
-                        properties: feature.properties || {}
-                    });
-                } else if (feature.geometry && feature.geometry.type === 'MultiPolygon') {
-                    // معالجة MultiPolygon
-                    feature.geometry.coordinates.forEach((polygonCoords, index) => {
-                        const polygonName = feature.properties?.name || 
-                                          feature.properties?.Name || 
-                                          feature.properties?.description ||
-                                          `مضلع ${polygons.length + 1}`;
-                        
-                        polygons.push({
-                            name: `${polygonName} - جزء ${index + 1}`,
-                            coordinates: polygonCoords[0],
-                            properties: feature.properties || {}
-                        });
-                    });
-                }
-            });
-            
-            return polygons;
         }
 
         // استخراج البيانات من Excel
@@ -1208,6 +1103,139 @@
             return null;
         }
 
+        // ============================================
+        // قراءة ملفات KMZ/KML
+        // ============================================
+
+        // قراءة ملف KMZ/KML
+        async function readKMZFile(file) {
+            try {
+                showLoading('جاري قراءة ملف KMZ...');
+                
+                let geojson;
+                
+                if (file.name.toLowerCase().endsWith('.kml')) {
+                    // قراءة ملف KML مباشرة
+                    const kmlText = await file.text();
+                    const parser = new DOMParser();
+                    const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+                    geojson = toGeoJSON.kml(kmlDoc);
+                } else {
+                    // استخراج KML من KMZ
+                    const zip = new JSZip();
+                    const zipData = await zip.loadAsync(file);
+                    
+                    let kmlFile = null;
+                    for (const filename in zipData.files) {
+                        if (filename.toLowerCase().endsWith('.kml')) {
+                            kmlFile = zipData.files[filename];
+                            break;
+                        }
+                    }
+                    
+                    if (!kmlFile) {
+                        throw new Error('لم يتم العثور على ملف KML داخل ملف KMZ');
+                    }
+                    
+                    const kmlText = await kmlFile.async('text');
+                    const parser = new DOMParser();
+                    const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+                    
+                    geojson = toGeoJSON.kml(kmlDoc);
+                }
+                
+                // استخراج المضللات من GeoJSON
+                polygonsData = extractPolygonsFromGeoJSON(geojson);
+                
+                // حساب حدود كل مضلع لتحسين الأداء
+                calculatePolygonBounds();
+                
+                hideLoading();
+                showMessage(`تم استخراج ${polygonsData.length} مضلع من ملف KMZ`, 'success');
+                
+                // عرض معلومات المضللات
+                document.getElementById('polygon-count').textContent = polygonsData.length;
+                document.getElementById('polygon-info').style.display = 'block';
+                
+            } catch (error) {
+                console.error('خطأ في قراءة ملف KMZ:', error);
+                hideLoading();
+                showMessage('خطأ في قراءة ملف KMZ. تأكد من صحة الملف', 'error');
+            }
+        }
+
+        // حساب حدود كل مضلع لتحسين الأداء
+        function calculatePolygonBounds() {
+            polygonBounds = {};
+            
+            polygonsData.forEach(polygon => {
+                const bounds = {
+                    minLon: Infinity,
+                    maxLon: -Infinity,
+                    minLat: Infinity,
+                    maxLat: -Infinity
+                };
+                
+                // حساب الحدود الدنيا والعليا للمضلع
+                polygon.coordinates.forEach(coord => {
+                    const lon = coord[0];
+                    const lat = coord[1];
+                    
+                    if (lon < bounds.minLon) bounds.minLon = lon;
+                    if (lon > bounds.maxLon) bounds.maxLon = lon;
+                    if (lat < bounds.minLat) bounds.minLat = lat;
+                    if (lat > bounds.maxLat) bounds.maxLat = lat;
+                });
+                
+                polygonBounds[polygon.name] = bounds;
+            });
+        }
+
+        // استخراج المضللات من GeoJSON
+        function extractPolygonsFromGeoJSON(geojson) {
+            const polygons = [];
+            
+            if (!geojson || !geojson.features) {
+                return polygons;
+            }
+            
+            geojson.features.forEach(feature => {
+                if (feature.geometry && feature.geometry.type === 'Polygon') {
+                    const polygonName = feature.properties?.name || 
+                                      feature.properties?.Name || 
+                                      feature.properties?.description ||
+                                      feature.properties?.تسمية ||
+                                      `مضلع ${polygons.length + 1}`;
+                    
+                    polygons.push({
+                        name: polygonName,
+                        coordinates: feature.geometry.coordinates[0],
+                        properties: feature.properties || {}
+                    });
+                } else if (feature.geometry && feature.geometry.type === 'MultiPolygon') {
+                    // معالجة MultiPolygon
+                    feature.geometry.coordinates.forEach((polygonCoords, index) => {
+                        const polygonName = feature.properties?.name || 
+                                          feature.properties?.Name || 
+                                          feature.properties?.description ||
+                                          `مضلع ${polygons.length + 1}`;
+                        
+                        polygons.push({
+                            name: `${polygonName} - جزء ${index + 1}`,
+                            coordinates: polygonCoords[0],
+                            properties: feature.properties || {}
+                        });
+                    });
+                }
+            });
+            
+            return polygons;
+        }
+
+        // ============================================
+        // عرض البيانات
+        // ============================================
+
         // عرض عينة من البيانات
         function displaySampleData(sampleData) {
             const tbody = document.getElementById('results-body');
@@ -1275,11 +1303,14 @@
             document.getElementById('pagination-controls').style.display = 'none';
         }
 
+        // ============================================
+        // البيانات النموذجية
+        // ============================================
+
         // تحميل البيانات النموذجية
         function loadSampleData() {
             showLoading('جاري تحميل البيانات النموذجية...');
             
-            // محاكاة تأخير الشبكة
             setTimeout(() => {
                 // بيانات نموذجية
                 const sampleExcelData = [
@@ -1359,6 +1390,10 @@
             }, 1500);
         }
 
+        // ============================================
+        // معالجة البيانات
+        // ============================================
+
         // معالجة البيانات
         function processData() {
             if (excelData.length === 0) {
@@ -1372,7 +1407,6 @@
             
             showLoading('جاري معالجة البيانات...');
             
-            // معالجة البيانات في دفعات لتجنب تجميد المتصفح
             setTimeout(() => {
                 processDataInBatches();
             }, 100);
@@ -1380,12 +1414,11 @@
 
         // معالجة البيانات في دفعات
         function processDataInBatches() {
-            const batchSize = 1000; // عدد النقاط في كل دفعة
+            const batchSize = 1000;
             const totalBatches = Math.ceil(excelData.length / batchSize);
             let currentBatch = 0;
             processedData = [];
             
-            // دالة لمعالجة دفعة واحدة
             const processBatch = () => {
                 const start = currentBatch * batchSize;
                 const end = Math.min(start + batchSize, excelData.length);
@@ -1417,18 +1450,16 @@
                 
                 // إذا كانت هناك دفعات أخرى، نستمر
                 if (currentBatch < totalBatches) {
-                    setTimeout(processBatch, 10); // تأخير بسيط للسماح للمتصفح بالتنفس
+                    setTimeout(processBatch, 10);
                 } else {
-                    // انتهاء معالجة جميع الدفعات
                     completeProcessing();
                 }
             };
             
-            // بدأ معالجة الدفعة الأولى
             processBatch();
         }
 
-        // دالة محسنة للعثور على المضلع المناسب للنقطة
+        // العثور على المضلع المناسب للنقطة
         function findPolygonForPoint(longitude, latitude) {
             let polygonName = "غير مرتبط";
             
@@ -1436,7 +1467,7 @@
             for (const polygon of polygonsData) {
                 const bounds = polygonBounds[polygon.name];
                 
-                // التحقق السريع من حدود المضلع أولاً (تحسين الأداء)
+                // التحقق السريع من حدود المضلع أولاً
                 if (bounds && 
                     longitude >= bounds.minLon && longitude <= bounds.maxLon &&
                     latitude >= bounds.minLat && latitude <= bounds.maxLat) {
@@ -1452,9 +1483,8 @@
             return polygonName;
         }
 
-        // دالة للتحقق مما إذا كانت النقطة داخل المضلع
+        // التحقق مما إذا كانت النقطة داخل المضلع
         function pointInPolygon(longitude, latitude, polygon) {
-            // خوارزمية Ray Casting المحسنة
             let inside = false;
             const x = longitude;
             const y = latitude;
@@ -1463,7 +1493,6 @@
                 const xi = polygon[i][0], yi = polygon[i][1];
                 const xj = polygon[j][0], yj = polygon[j][1];
                 
-                // التحقق من تقاطع الشعاع
                 const intersect = ((yi > y) !== (yj > y)) &&
                     (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
                 
@@ -1475,7 +1504,6 @@
 
         // إكمال المعالجة
         function completeProcessing() {
-            // تقسيم النقاط إلى مجموعات داخل كل مضلع
             polygonGroups = {};
             const clustersPerPolygon = parseInt(document.getElementById('clusters-per-polygon').value) || 3;
             const maxPointsPerCluster = parseInt(document.getElementById('max-points-per-cluster').value) || 50;
@@ -1495,7 +1523,7 @@
             for (const polygonName in pointsByPolygon) {
                 const points = pointsByPolygon[polygonName];
                 
-                // ترتيب النقاط من الجنوب إلى الشمال (من الأقل إلى الأعلى في خط العرض)
+                // ترتيب النقاط من الجنوب إلى الشمال
                 points.sort((a, b) => a.latitude - b.latitude);
                 
                 // تطبيق خوارزمية التجميع
@@ -1511,7 +1539,6 @@
                     };
                 });
                 
-                // ترتيب المجموعات من الجنوب إلى الشمال
                 clustersWithStats.sort((a, b) => a.avgLat - b.avgLat);
                 
                 // تعيين رقم المجموعة لكل نقطة
@@ -1546,12 +1573,10 @@
         function smartClusterPoints(points, targetClusters, maxPointsPerCluster) {
             if (points.length === 0) return [];
             
-            // إذا كان عدد النقاط أقل من الحد الأقصى، نعيد مجموعة واحدة
             if (points.length <= maxPointsPerCluster) {
                 return [points];
             }
             
-            // حساب عدد المجموعات المثالي
             const idealClusters = Math.min(
                 targetClusters,
                 Math.ceil(points.length / maxPointsPerCluster)
@@ -1559,9 +1584,7 @@
             
             const clusters = [];
             
-            // تقسيم النقاط حسب التوزيع الجغرافي
             if (points.length > 0) {
-                // تقسيم حسب خط العرض
                 const sortedByLat = [...points];
                 const pointsPerCluster = Math.ceil(sortedByLat.length / idealClusters);
                 
@@ -1575,13 +1598,11 @@
                 }
             }
             
-            // ضمان عدم تجاوز أي مجموعة للحد الأقصى
             const finalClusters = [];
             for (const cluster of clusters) {
                 if (cluster.length <= maxPointsPerCluster) {
                     finalClusters.push(cluster);
                 } else {
-                    // تقسيم المجموعة الكبيرة إلى مجموعات أصغر
                     const subClusters = splitLargeCluster(cluster, maxPointsPerCluster);
                     subClusters.forEach(subCluster => finalClusters.push(subCluster));
                 }
@@ -1609,6 +1630,10 @@
             return subClusters;
         }
 
+        // ============================================
+        // عرض النتائج
+        // ============================================
+
         // عرض صفحة من النتائج
         function displayResultsPage(page) {
             currentPage = page;
@@ -1629,7 +1654,6 @@
                 const group = item.group || 0;
                 const groupSize = item.groupSize || 0;
                 
-                // حساب لون المجموعة
                 const groupColor = group > 0 ? groupColors[(group - 1) % groupColors.length] : '#ccc';
                 
                 if (group > 0 && item.polygon !== "غير مرتبط") {
@@ -1668,7 +1692,6 @@
                 totalGroups: totalGroups
             });
             
-            // تحديث عناصر التحكم في الصفحات
             updatePaginationControls();
         }
 
@@ -1756,6 +1779,10 @@
             document.getElementById('total-groups').textContent = totalGroups.toLocaleString();
         }
 
+        // ============================================
+        // تحميل النتائج
+        // ============================================
+
         // تحميل النتائج كملف Excel
         function downloadResults() {
             if (processedData.length === 0) {
@@ -1765,15 +1792,12 @@
             
             showLoading('جاري إنشاء ملف Excel...');
             
-            // إنشاء الملف في خلفية لتجنب تجميد المتصفح
             setTimeout(() => {
                 try {
-                    // إنشاء ورقة عمل
                     const worksheetData = [
                         ["رقم العداد", "الإحداثي الطولي", "الإحداثي العرضي", "اسم المضلع", "المجموعة", "عدد النقاط في المجموعة", "حالة الربط"]
                     ];
                     
-                    // إضافة البيانات على دفعات
                     const batchSize = 50000;
                     let currentIndex = 0;
                     
@@ -1794,7 +1818,6 @@
                         
                         currentIndex = endIndex;
                         
-                        // تحديث التقدم
                         const progressPercent = Math.round((currentIndex / processedData.length) * 100);
                         document.getElementById('detailed-progress').style.width = `${progressPercent}%`;
                         document.getElementById('progress-percentage').textContent = `${progressPercent}%`;
@@ -1802,12 +1825,10 @@
                         if (currentIndex < processedData.length) {
                             setTimeout(addBatch, 10);
                         } else {
-                            // بعد إضافة جميع البيانات، ننشئ الملف
                             createExcelFile(worksheetData);
                         }
                     };
                     
-                    // بدأ إضافة الدفعة الأولى
                     addBatch();
                     
                 } catch (error) {
@@ -1876,7 +1897,11 @@
             }
         }
 
+        // ============================================
         // دوال مساعدة
+        // ============================================
+
+        // تنسيق حجم الملف
         function formatFileSize(bytes) {
             if (bytes < 1024) return bytes + ' بايت';
             if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' كيلوبايت';
@@ -1884,6 +1909,7 @@
             return (bytes / 1073741824).toFixed(1) + ' جيجابايت';
         }
 
+        // عرض نافذة التحميل
         function showLoading(message = 'جاري المعالجة...') {
             document.getElementById('loading-text').textContent = message;
             document.getElementById('loading-overlay').style.display = 'flex';
@@ -1891,20 +1917,25 @@
             document.getElementById('progress-percentage').textContent = '0%';
         }
 
+        // إخفاء نافذة التحميل
         function hideLoading() {
             document.getElementById('loading-overlay').style.display = 'none';
         }
 
+        // عرض رسالة
         function showMessage(text, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = text;
             messageDiv.className = `message ${type}`;
             
-            // إخفاء الرسالة بعد 5 ثواني
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
         }
+
+        // ============================================
+        // أحداث الصفحة
+        // ============================================
 
         // تحميل البيانات النموذجية عند فتح الصفحة
         window.addEventListener('load', function() {
